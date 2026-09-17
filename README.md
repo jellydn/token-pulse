@@ -21,6 +21,7 @@ Token Pulse reads CodexBar output and turns it into a dashboard you can glance a
 
 - 📊 Provider status, session/weekly limits, remaining percentage, and reset countdowns
 - 📈 Today, 7-day, and 30-day tokens and estimated cost with prior-period comparison
+- 💳 Configurable monthly subscription list and total cost
 - 🧩 Input, output, cache, and reasoning-token breakdowns
 - 🔥 Daily token and cost burn charts
 - 💾 Durable local snapshots and normalized daily history in SQLite
@@ -104,8 +105,19 @@ CLI mode executes `codexbar dashboard` and `codexbar cost --provider all --forma
 | `CODEXBAR_URL`                 | `http://127.0.0.1:8080` | Loopback CodexBar endpoint      |
 | `CODEXBAR_DASHBOARD_TOKEN`     | unset                   | CodexBar dashboard bearer token |
 | `CODEXBAR_BIN`                 | `codexbar`              | CLI executable path             |
+| `TOKEN_PULSE_SUBSCRIPTIONS`    | unset                   | JSON list of `{name, monthlyUsd}` subscription costs |
 
 Unknown costs and token fields remain unknown at ingestion.
+
+To show your recurring subscription costs separately from CodexBar usage costs,
+set `TOKEN_PULSE_SUBSCRIPTIONS` to a JSON array:
+
+```sh
+export TOKEN_PULSE_SUBSCRIPTIONS='[
+  {"name":"ChatGPT Plus","monthlyUsd":20},
+  {"name":"Claude Pro","monthlyUsd":20}
+]'
+```
 
 ## Routes
 

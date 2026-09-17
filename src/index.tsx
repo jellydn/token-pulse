@@ -4,7 +4,7 @@ import { loadConfig } from "./config";
 import { Storage } from "./storage";
 
 const config = loadConfig();
-const storage = new Storage(config.dbPath);
+const storage = new Storage(config.dbPath, config.subscriptions);
 const adapter = createCodexBarAdapter(config);
 
 let inFlight: Promise<void> | null = null;

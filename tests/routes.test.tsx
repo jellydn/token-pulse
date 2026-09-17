@@ -12,7 +12,9 @@ import {
 const stores: Storage[] = [];
 
 function setup(): { storage: Storage; app: ReturnType<typeof createApp> } {
-  const storage = new Storage(":memory:");
+  const storage = new Storage(":memory:", [
+    { name: "ChatGPT Plus", monthlyUsd: 20 },
+  ]);
   stores.push(storage);
   storage.save(storageFixture());
   return { storage, app: createApp(storage) };
@@ -31,6 +33,8 @@ describe("key routes", () => {
     expect(response.status).toBe(200);
     expect(html).toContain('hx-trigger="every 60s"');
     expect(html).toContain("Last 30 days");
+    expect(html).toContain("ChatGPT Plus");
+    expect(html).toContain("All subscription costs");
   });
 
   test("renders one block per codex account with usage status", async () => {

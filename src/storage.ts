@@ -1,7 +1,12 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import type { DashboardData, NormalizedSnapshot, UsageTotals } from "./types";
+import type {
+  DashboardData,
+  NormalizedSnapshot,
+  Subscription,
+  UsageTotals,
+} from "./types";
 
 const EMPTY_TOTALS: UsageTotals = {
   tokens: 0,
@@ -62,8 +67,12 @@ function percentChange(current: number, previous: number): number | null {
 
 export class Storage {
   readonly db: Database;
+  private readonly subscriptions: Subscription[];
 
-  constructor(path: string) {
+  constructor(path: string, subscriptions: Subscription[] = []) {
+    this.subscriptions = subscriptions.map((subscription) => ({
+      ...subscription,
+    }));
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.db = new Database(path, { create: true });
     this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
@@ -204,6 +213,13 @@ export class Storage {
       capturedAt: snapshotRow?.captured_at ?? null,
       source: snapshotRow?.source ?? null,
       providers: snapshot?.providers ?? [],
+      subscriptions: this.subscriptions.map((subscription) => ({
+        ...subscription,
+      })),
+      subscriptionTotalUsd: this.subscriptions.reduce(
+        (total, subscription) => total + subscription.monthlyUsd,
+        0,
+      ),
       today: totalRows(range(0, 0)),
       week,
       month,

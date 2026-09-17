@@ -169,4 +169,24 @@ describe("CodexBar normalization", () => {
       }),
     ).toThrow("http:");
   });
+
+  test("parses configured monthly subscriptions", () => {
+    const config = loadConfig({
+      TOKEN_PULSE_SUBSCRIPTIONS:
+        '[{"name":"ChatGPT Plus","monthlyUsd":20},{"name":"Claude Pro","monthlyUsd":20.5}]',
+    });
+
+    expect(config.subscriptions).toEqual([
+      { name: "ChatGPT Plus", monthlyUsd: 20 },
+      { name: "Claude Pro", monthlyUsd: 20.5 },
+    ]);
+  });
+
+  test("rejects invalid subscription configuration", () => {
+    expect(() =>
+      loadConfig({
+        TOKEN_PULSE_SUBSCRIPTIONS: '[{"name":"ChatGPT Plus","monthlyUsd":-1}]',
+      }),
+    ).toThrow("non-negative monthlyUsd");
+  });
 });

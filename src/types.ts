@@ -59,10 +59,17 @@ export interface UsageTotals {
   reasoningTokens: number;
 }
 
+export interface Subscription {
+  name: string;
+  monthlyUsd: number;
+}
+
 export interface DashboardData {
   capturedAt: string | null;
   source: string | null;
   providers: ProviderState[];
+  subscriptions: Subscription[];
+  subscriptionTotalUsd: number;
   today: UsageTotals;
   week: UsageTotals;
   month: UsageTotals;

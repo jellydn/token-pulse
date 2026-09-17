@@ -1,3 +1,5 @@
+import type { Subscription } from "./types";
+
 export type SourceMode = "http" | "cli";
 
 export interface Config {
@@ -9,6 +11,7 @@ export interface Config {
   codexBarUrl: string;
   codexBarToken: string | undefined;
   codexBarBin: string;
+  subscriptions: Subscription[];
 }
 
 function integer(
@@ -24,6 +27,42 @@ function integer(
     throw new Error(`${name} must be a positive integer`);
   }
   return parsed;
+}
+
+function subscriptions(value: string | undefined): Subscription[] {
+  if (value === undefined || value.trim() === "") return [];
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("TOKEN_PULSE_SUBSCRIPTIONS must be valid JSON");
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error("TOKEN_PULSE_SUBSCRIPTIONS must be a JSON array");
+  }
+
+  return parsed.map((entry, index) => {
+    if (typeof entry !== "object" || entry === null) {
+      throw new Error(
+        `TOKEN_PULSE_SUBSCRIPTIONS entry ${index + 1} must be an object`,
+      );
+    }
+    const record = entry as Record<string, unknown>;
+    const name = typeof record.name === "string" ? record.name.trim() : "";
+    const monthlyUsd = record.monthlyUsd;
+    if (
+      !name ||
+      typeof monthlyUsd !== "number" ||
+      !Number.isFinite(monthlyUsd) ||
+      monthlyUsd < 0
+    ) {
+      throw new Error(
+        `TOKEN_PULSE_SUBSCRIPTIONS entry ${index + 1} needs a name and non-negative monthlyUsd`,
+      );
+    }
+    return { name, monthlyUsd };
+  });
 }
 
 export function loadConfig(
@@ -60,5 +99,6 @@ export function loadConfig(
     codexBarUrl,
     codexBarToken: env.CODEXBAR_DASHBOARD_TOKEN || undefined,
     codexBarBin: env.CODEXBAR_BIN ?? "codexbar",
+    subscriptions: subscriptions(env.TOKEN_PULSE_SUBSCRIPTIONS),
   };
 }
