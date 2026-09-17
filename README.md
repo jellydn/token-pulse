@@ -9,6 +9,10 @@
 
 A local-first token usage dashboard for [CodexBar](https://github.com/steipete/CodexBar). One Bun server, server-rendered UI, no frontend build runtime.
 
+<p align="center">
+  <img src="docs/screenshot-dashboard.png" alt="Token Pulse dashboard" width="800" />
+</p>
+
 ## Introduction
 
 Token Pulse reads CodexBar output and turns it into a dashboard you can glance at: provider status, session/weekly limits with reset countdowns, token usage and estimated cost across today / 7-day / 30-day windows and daily burn charts. History is stored durably in local SQLite, so your usage trends survive restarts.
