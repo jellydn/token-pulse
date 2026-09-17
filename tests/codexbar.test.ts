@@ -116,6 +116,48 @@ describe("CodexBar normalization", () => {
     }
   });
 
+  test("sanitizes HTML error blobs and caps length", () => {
+    const provider = dashboardFixture.providers[0] as Record<string, unknown>;
+    const html =
+      "Codex API error 504: <html>\n<head><style>body{font-family:Arial}</style></head>" +
+      `<body><div>${"lorem ipsum ".repeat(500)}</div></body></html>`;
+    const snapshot = normalizeCodexBar(
+      {
+        ...dashboardFixture,
+        providers: [{ ...provider, error: { message: html } }],
+      },
+      [],
+      "fixture",
+    );
+
+    const error = snapshot.providers[0]?.error ?? "";
+    expect(error.startsWith("Codex API error 504:")).toBe(true);
+    expect(error).not.toContain("<");
+    expect(error).not.toContain(">");
+    expect(error).not.toContain("  ");
+    expect(error).not.toContain("font-family");
+    expect(error.length).toBe(240);
+    expect(error.endsWith("…")).toBe(true);
+    expect(snapshot.degraded).toBe(true);
+  });
+
+  test("keeps short plain-text errors unchanged", () => {
+    const provider = dashboardFixture.providers[0] as Record<string, unknown>;
+    const snapshot = normalizeCodexBar(
+      {
+        ...dashboardFixture,
+        providers: [
+          { ...provider, error: { message: "Codex API error 429: limited" } },
+        ],
+      },
+      [],
+      "fixture",
+    );
+
+    expect(snapshot.providers[0]?.error).toBe("Codex API error 429: limited");
+    expect(snapshot.degraded).toBe(true);
+  });
+
   test("runJson names the command and output on non-JSON stdout", async () => {
     const error = await runJson(["echo", "not-json"]).catch(
       (cause: unknown) => cause,

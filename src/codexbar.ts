@@ -38,6 +38,22 @@ function redactAccount(value: string): string {
   return `${value.slice(0, 1)}***@${value.slice(separator + 1)}`;
 }
 
+const MAX_ERROR_LENGTH = 240;
+
+function sanitizeError(value: string | null): string | null {
+  if (value === null) return null;
+  const collapsed = value
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const text = collapsed.length > 0 ? collapsed : value.trim();
+  if (text.length === 0) return null;
+  if (text.length <= MAX_ERROR_LENGTH) return text;
+  return `${text.slice(0, MAX_ERROR_LENGTH - 1).trimEnd()}…`;
+}
+
 function normalizeProvider(value: unknown): ProviderState | null {
   const provider = record(value);
   const id = text(provider.id);
@@ -63,7 +79,7 @@ function normalizeProvider(value: unknown): ProviderState | null {
           }
         : null,
     windows: normalizeWindows(array(provider.windows)),
-    error: text(rawError.message),
+    error: sanitizeError(text(rawError.message)),
     accounts: null,
     updatedAt: text(provider.updatedAt),
   };
