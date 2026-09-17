@@ -11,6 +11,19 @@ export function createApp(storage: Storage): Hono {
   const app = new Hono();
 
   app.get("/assets/app.css", serveStatic({ path: "./public/app.css" }));
+  app.get("/assets/logo.svg", serveStatic({ path: "./public/logo.svg" }));
+  app.get("/assets/favicon.svg", serveStatic({ path: "./public/favicon.svg" }));
+  app.get("/favicon.ico", serveStatic({ path: "./public/favicon.ico" }));
+  app.get(
+    "/apple-touch-icon.png",
+    serveStatic({ path: "./public/apple-touch-icon.png" }),
+  );
+  app.get("/icon-192.png", serveStatic({ path: "./public/icon-192.png" }));
+  app.get("/icon-512.png", serveStatic({ path: "./public/icon-512.png" }));
+  app.get(
+    "/site.webmanifest",
+    serveStatic({ path: "./public/site.webmanifest" }),
+  );
   app.get(
     "/assets/htmx.min.js",
     serveStatic({ path: "./node_modules/htmx.org/dist/htmx.min.js" }),

@@ -424,6 +424,15 @@ export const Page: FC<{ children: unknown }> = ({ children }) => (
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <meta name="color-scheme" content="dark" />
       <title>Token Pulse</title>
+      <meta name="theme-color" content="#080d18" />
+      <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+      <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+      <link
+        rel="apple-touch-icon"
+        sizes="180x180"
+        href="/apple-touch-icon.png"
+      />
+      <link rel="manifest" href="/site.webmanifest" />
       <link rel="stylesheet" href="/assets/app.css" />
       <script src="/assets/htmx.min.js" defer />
     </head>
@@ -431,9 +440,11 @@ export const Page: FC<{ children: unknown }> = ({ children }) => (
       <header class="border-b border-white/6">
         <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
           <div class="flex items-center gap-3">
-            <div class="grid h-9 w-9 place-items-center rounded-xl border border-teal-300/20 bg-teal-400/10 font-mono text-sm font-bold text-teal-300">
-              TP
-            </div>
+            <img
+              src="/assets/logo.svg"
+              alt="Token Pulse logo"
+              class="h-9 w-9"
+            />
             <div>
               <h1 class="text-base font-semibold tracking-tight text-white">
                 Token Pulse

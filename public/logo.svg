@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Token Pulse logo">
+  <title>Token Pulse logo</title>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="#0d1526"/>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="none" stroke="#2dd4bf" stroke-opacity="0.25" stroke-width="3"/>
+  <polyline points="22,78 44,78 54,44 68,100 79,62 86,78 106,78" fill="none" stroke="#2dd4bf" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="54" cy="44" r="8" fill="#2dd4bf"/>
+</svg>
