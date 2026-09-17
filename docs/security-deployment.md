@@ -2,9 +2,68 @@
 
 ## Trust boundary
 
-CodexBar is the credential boundary. It reads provider sessions, cookies, OAuth state, and API keys. Token Pulse receives only usage JSON and stores no provider credential.
+CodexBar is a privileged internal data source. It reads provider sessions, cookies, OAuth state, API keys, local usage logs, and account metadata. Its HTTP output can contain provider and account usage, limits, costs, project paths, and identity fields. Token Pulse receives only the usage data needed for its dashboard and stores no provider credential.
 
-Keep `codexbar serve` on `127.0.0.1`. Do not publish, tunnel, reverse-proxy, or port-forward its port. Use a high-entropy `CODEXBAR_DASHBOARD_TOKEN`; pass it to both processes through protected environment configuration. Token Pulse rejects a non-loopback CodexBar URL.
+Run CodexBar with a high-entropy dashboard token and a loopback listener:
+
+```sh
+export CODEXBAR_DASHBOARD_TOKEN="$(openssl rand -hex 32)"
+codexbar serve \
+  --host 127.0.0.1 \
+  --port 8080 \
+  --refresh-interval 60 \
+  --identity redacted
+```
+
+Pass the same token to Token Pulse through protected environment configuration. Token Pulse rejects a non-loopback `CODEXBAR_URL`.
+
+### Why CodexBar must remain internal
+
+`--host 127.0.0.1` prevents another machine from connecting directly to port 8080 over the LAN or public Internet. It does **not** prevent software on the same host from forwarding that port. Tailscale Serve, Cloudflare Tunnel, a reverse proxy, or an SSH port forward connects to the loopback listener locally and can then publish it to another network.
+
+Therefore, a loopback bind does not make this safe:
+
+```sh
+# UNSAFE: publishes CodexBar directly to the tailnet.
+tailscale serve http://127.0.0.1:8080
+
+# UNSAFE: publishes CodexBar directly through a Cloudflare Tunnel.
+cloudflared tunnel --url http://127.0.0.1:8080
+```
+
+These examples bypass Token Pulse's intended presentation and security boundary. CodexBar routes can expose different data and can have different authentication behavior. A `CODEXBAR_DASHBOARD_TOKEN` protects the dashboard snapshot route, but it must not be treated as a security wrapper for every CodexBar route.
+
+`--identity redacted` controls how much identity information CodexBar returns. It does not authenticate a caller, authorize access, stop a tunnel, or hide provider/account usage. It is a privacy reduction, not access control.
+
+The supported topology has one public or tailnet-facing service:
+
+```text
+Provider credentials and logs
+            │
+            ▼
+CodexBar 127.0.0.1:8080
+            │ server-side loopback only
+            ▼
+Token Pulse 127.0.0.1:3000
+            │
+            ├── Tailscale authentication and ACLs
+            └── Cloudflare Tunnel + Access policy
+```
+
+Safe Tailscale access publishes Token Pulse, not CodexBar:
+
+```sh
+tailscale serve http://127.0.0.1:3000
+```
+
+Safe Cloudflare access uses an authenticated Access application and sends the tunnel only to Token Pulse:
+
+```yaml
+ingress:
+  - hostname: tokens.example.com
+    service: http://127.0.0.1:3000
+  - service: http_status:404
+```
 
 Token Pulse also binds to `127.0.0.1` by default. For remote access, expose **only Token Pulse** through one of these authenticated paths:
 
@@ -18,7 +77,7 @@ Token Pulse has no built-in user authentication. Do not bind it to a public inte
 A small host runs two required foreground services and one optional access service:
 
 ```text
-codexbar serve --host 127.0.0.1 --port 8080
+codexbar serve --host 127.0.0.1 --port 8080 --refresh-interval 60 --identity redacted
 token-dashboard (bun /opt/token-pulse/dist/index.js)
 cloudflared tunnel run token-pulse    # optional; or use Tailscale Serve
 ```
@@ -40,15 +99,8 @@ CODEXBAR_DASHBOARD_TOKEN=<read from a protected secret store>
 
 Set the environment file to mode `0600` and the database directory to mode `0700`. Back up the SQLite database with a SQLite-aware backup command while the service is running. Keep CodexBar and Token Pulse current, and verify `/healthz` after upgrades.
 
-## Cloudflare example
+## Cloudflare configuration
 
-The tunnel ingress target is Token Pulse only:
+The tunnel ingress target is Token Pulse only, as shown above. Before starting `cloudflared tunnel run token-pulse`, configure Cloudflare Access for `tokens.example.com` with an identity policy.
 
-```yaml
-ingress:
-  - hostname: tokens.example.com
-    service: http://127.0.0.1:3000
-  - service: http_status:404
-```
-
-Configure Cloudflare Access for `tokens.example.com` before enabling the public hostname. A tunnel by itself is transport, not authorization.
+A tunnel by itself is transport, not authorization. Cloudflare Access supplies the required authentication boundary. Never add `http://127.0.0.1:8080` as an ingress service.

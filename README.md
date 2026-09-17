@@ -38,7 +38,11 @@ Create a random dashboard token and run CodexBar on loopback only:
 
 ```sh
 export CODEXBAR_DASHBOARD_TOKEN="$(openssl rand -hex 32)"
-codexbar serve --host 127.0.0.1 --port 8080
+codexbar serve \
+  --host 127.0.0.1 \
+  --port 8080 \
+  --refresh-interval 60 \
+  --identity redacted
 ```
 
 Use the same token in Token Pulse:
@@ -51,6 +55,8 @@ bun run start
 ```
 
 Token Pulse rejects non-loopback `CODEXBAR_URL` values. It calls authenticated `GET /dashboard/v1/snapshot` for limits/status and loopback `GET /cost?provider=all` for history and project attribution.
+
+> **Do not tunnel port 8080.** Binding CodexBar to `127.0.0.1` blocks direct LAN and public connections, but Tailscale Serve, Cloudflare Tunnel, or another local proxy can still publish that loopback service. `--identity redacted` reduces identity detail; it is not authentication or access control. Expose only Token Pulse on port 3000 through Tailscale authentication or Cloudflare Tunnel + Access. See [Security and deployment](docs/security-deployment.md#why-codexbar-must-remain-internal) for safe and unsafe examples.
 
 ### CLI mode
 
