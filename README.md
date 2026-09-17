@@ -27,6 +27,7 @@ Token Pulse reads CodexBar output and turns it into a dashboard you can glance a
 - 💾 Durable local snapshots and normalized daily history in SQLite
 - 🔄 Five-minute collection by default with HTMX dashboard refresh every 60 seconds
 - 📱 Responsive phone and desktop layouts, plus useful empty and degraded states
+- 📖 High-contrast Kindle/e-ink view with lightweight 10-minute partial refreshes
 
 ## Tech Stack
 
@@ -125,10 +126,24 @@ export TOKEN_PULSE_SUBSCRIPTIONS='[
 | ------------------------- | ------------------------------------------------------------ |
 | `GET /`                   | Complete server-rendered dashboard                           |
 | `GET /partials/dashboard` | HTMX dashboard fragment |
+| `GET /kindle`             | Monochrome Kindle/e-ink dashboard                            |
+| `GET /partials/kindle`    | Lightweight Kindle refresh fragment                         |
 | `GET /api/dashboard`      | Normalized dashboard JSON                                    |
 | `GET /healthz`            | Process health                                               |
 
 See [architecture](docs/architecture.md) and [security and deployment](docs/security-deployment.md) for operating details.
+
+## Kindle/e-ink display
+
+Open `http://<token-pulse-host>:3000/kindle` in the Kindle experimental browser. The view uses a large, monochrome layout without gradients, animation, web fonts, or a client framework. A small same-origin script requests only `/partials/kindle` every 10 minutes and replaces the dashboard only when the returned markup changes. Use the **Refresh** button for an immediate update. With JavaScript disabled, the page remains readable and offers a normal reload link.
+
+Keep Token Pulse on loopback and publish port `3000` through Tailscale Serve or a Cloudflare Tunnel protected by Access. Never publish CodexBar port `8080`. The Kindle receives rendered usage HTML from Token Pulse; the CodexBar dashboard token stays on the host.
+
+The current normalized CodexBar feed does not include per-project aggregation, so the e-ink view labels **Top project** as **Not reported** rather than guessing. The remaining percentage, session/weekly limits, reset countdowns, today's tokens and cost, and snapshot timestamp are live.
+
+### Optional jailbroken Kindle path
+
+The standard browser is the supported first version. A jailbroken Kindle can later wrap the same `/kindle` route in a WAF/Mesquite launcher for a dedicated fullscreen app. Model-specific LIPC or framebuffer hooks could add controlled partial/full refreshes or a wake → fetch → render → sleep cycle. These integrations are intentionally not required because jailbreak, WAF, power-management, and custom-screensaver support vary by Kindle model and firmware.
 
 ## Development
 
