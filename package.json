@@ -23,6 +23,6 @@
     "@tailwindcss/cli": "^4.1.13",
     "@types/bun": "^1.2.21",
     "tailwindcss": "^4.1.13",
-    "typescript": "^5.9.2"
+    "typescript": "^7.0.0"
   }
 }
