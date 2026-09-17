@@ -1,0 +1,22 @@
+#:schema https://www.schemastore.org/prek.json
+# Pre-commit configuration for Token Pulse (Bun + Hono + SQLite)
+# https://github.com/j178/prek
+
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "trailing-whitespace" },
+    { id = "end-of-file-fixer" },
+    { id = "check-added-large-files", args = ["--maxkb=500"] },
+    { id = "check-merge-conflict" },
+    { id = "check-yaml" },
+    { id = "check-json" },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+    { id = "biome", name = "Biome check", entry = "bun run lint", language = "system", pass_filenames = false, always_run = true },
+    { id = "typecheck", name = "Typecheck", entry = "bun run typecheck", language = "system", pass_filenames = false, always_run = true },
+    { id = "test", name = "Tests", entry = "bun test", language = "system", pass_filenames = false, always_run = true },
+]
