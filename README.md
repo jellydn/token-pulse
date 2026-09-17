@@ -135,7 +135,7 @@ See [architecture](docs/architecture.md) and [security and deployment](docs/secu
 
 ## Kindle/e-ink display
 
-Open `http://<token-pulse-host>:3000/kindle` in the Kindle experimental browser. The view uses a large, monochrome layout without gradients, animation, web fonts, or a client framework. A small same-origin script requests only `/partials/kindle` every 10 minutes and replaces the dashboard only when the returned markup changes. Use the **Refresh** button for an immediate update. With JavaScript disabled, the page remains readable and offers a normal reload link.
+Open the protected published URL in the Kindle experimental browser: `https://<machine>.<tailnet>.ts.net/kindle` with Tailscale Serve, or `https://<access-protected-host>/kindle` with Cloudflare Access. The view uses a large, monochrome layout without gradients, animation, web fonts, or a client framework. A small same-origin script requests only `/partials/kindle` every 10 minutes and replaces the dashboard only when the returned markup changes. Use the **Refresh** button for an immediate update. With JavaScript disabled, the page remains readable and offers a normal reload link.
 
 Keep Token Pulse on loopback and publish port `3000` through Tailscale Serve or a Cloudflare Tunnel protected by Access. Never publish CodexBar port `8080`. The Kindle receives rendered usage HTML from Token Pulse; the CodexBar dashboard token stays on the host.
 
