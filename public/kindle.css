@@ -1,0 +1,246 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.kindle-shell {
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.kindle-header {
+  display: table;
+  width: 100%;
+  padding-bottom: 0.75rem;
+  border-bottom: 4px solid #000;
+}
+
+.kindle-header > div,
+.kindle-header > button {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.kindle-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+
+.kindle-header p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+#kindle-refresh {
+  width: 7rem;
+  padding: 0.55rem 0.7rem;
+  border: 3px solid #000;
+  background: #fff;
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+}
+
+#kindle-refresh[disabled] {
+  border-style: dashed;
+}
+
+.kindle-refresh-status,
+.kindle-updated,
+.kindle-noscript {
+  margin: 0.55rem 0 0;
+  font-size: 0.75rem;
+}
+
+.kindle-section,
+.kindle-summary {
+  margin-top: 1rem;
+  border: 3px solid #000;
+}
+
+.kindle-section {
+  padding: 0.8rem;
+}
+
+.kindle-section-heading {
+  display: table;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 2px solid #000;
+}
+
+.kindle-section-heading h2,
+.kindle-section-heading span {
+  display: table-cell;
+  vertical-align: baseline;
+}
+
+.kindle-section-heading h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.kindle-section-heading span {
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.kindle-account + .kindle-account {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 2px dashed #000;
+}
+
+.kindle-account h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+}
+
+.kindle-window + .kindle-window {
+  margin-top: 0.9rem;
+}
+
+.kindle-window-heading {
+  display: table;
+  width: 100%;
+}
+
+.kindle-window-heading > strong {
+  display: table-cell;
+}
+
+.kindle-percent {
+  font-size: 1.15rem;
+  text-align: right;
+}
+
+.kindle-meter {
+  height: 1rem;
+  margin-top: 0.25rem;
+  border: 2px solid #000;
+  background: #fff;
+}
+
+.kindle-meter-fill {
+  display: block;
+  height: 100%;
+  background: #000;
+}
+
+.kindle-reset,
+.kindle-empty {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+}
+
+.kindle-summary {
+  overflow: hidden;
+}
+
+.kindle-stat {
+  display: inline-block;
+  width: 50%;
+  margin-right: -4px;
+  padding: 0.75rem;
+  vertical-align: top;
+}
+
+.kindle-stat + .kindle-stat {
+  border-left: 2px solid #000;
+}
+
+.kindle-stat span,
+.kindle-stat strong,
+.kindle-stat small {
+  display: block;
+}
+
+.kindle-stat span {
+  font-size: 0.72rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.kindle-stat strong {
+  margin-top: 0.25rem;
+  font-family: "Courier New", monospace;
+  font-size: 1.4rem;
+}
+
+.kindle-stat-wide {
+  width: 100%;
+  border-top: 2px solid #000;
+}
+
+.kindle-stat.kindle-stat-wide {
+  border-left: 0;
+}
+
+.kindle-stat small {
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+}
+
+.kindle-notice,
+.kindle-empty-state {
+  padding: 0.75rem;
+  border: 3px double #000;
+  font-weight: bold;
+}
+
+.kindle-empty-state h2,
+.kindle-empty-state p {
+  margin: 0;
+}
+
+.kindle-empty-state p {
+  margin-top: 0.4rem;
+  font-weight: normal;
+}
+
+a {
+  color: #000;
+  font-weight: bold;
+}
+
+@media (max-width: 480px) {
+  html,
+  body {
+    font-size: 16px;
+  }
+
+  .kindle-shell {
+    padding: 0.65rem;
+  }
+}
+
+@media print {
+  #kindle-refresh,
+  .kindle-refresh-status,
+  .kindle-noscript {
+    display: none;
+  }
+}
