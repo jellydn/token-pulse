@@ -13,7 +13,8 @@
       "!!public/htmx.min.js",
       "!!node_modules",
       "!!data",
-      "!!.amp"
+      "!!.amp",
+      "!!.delta"
     ]
   },
   "formatter": {

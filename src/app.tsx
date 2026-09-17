@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { toDisplayModel } from "./display";
 import type { Storage } from "./storage";
 import { Dashboard, KindleDashboard, KindlePage, Page } from "./ui";
 
@@ -32,6 +33,10 @@ export function createApp(storage: Storage): Hono {
   app.get("/assets/htmx.min.js", serveStatic({ path: "./public/htmx.min.js" }));
   app.get("/healthz", (context) => context.json({ status: "ok" }));
   app.get("/api/dashboard", (context) => context.json(storage.dashboard()));
+  app.get("/api/display", (context) => {
+    context.header("Cache-Control", "no-store");
+    return context.json(toDisplayModel(storage.dashboard()));
+  });
   app.get("/partials/dashboard", (context) =>
     context.html(<Dashboard data={storage.dashboard()} />),
   );
