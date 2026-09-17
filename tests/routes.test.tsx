@@ -66,6 +66,38 @@ describe("key routes", () => {
     expect(html).not.toContain("<html");
   });
 
+  test("renders the Kindle dashboard with lightweight partial refresh", async () => {
+    const { app } = setup();
+    const response = await app.request("/kindle");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain("Token Pulse · Kindle");
+    expect(html).toContain('id="kindle-dashboard"');
+    expect(html).toContain("Auto-refreshes every 10 minutes");
+    expect(html).toContain("Tokens today");
+    expect(html).toContain("Estimated cost");
+    expect(html).toContain("Top project");
+    expect(html).toContain('src="/assets/kindle.js"');
+    expect(html).not.toContain("CODEXBAR_DASHBOARD_TOKEN");
+
+    expect((await app.request("/assets/kindle.css")).status).toBe(200);
+    expect((await app.request("/assets/kindle.js")).status).toBe(200);
+  });
+
+  test("returns a Kindle partial without the page shell", async () => {
+    const { app } = setup();
+    const response = await app.request("/partials/kindle");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(html).toContain("Tokens today");
+    expect(html).toContain("Last updated:");
+    expect(html).not.toContain("<html");
+    expect(html).not.toContain("<script");
+  });
+
   test("returns JSON data and health", async () => {
     const { app } = setup();
     const dashboard = await app.request("/api/dashboard");
