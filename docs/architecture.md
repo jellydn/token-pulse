@@ -44,6 +44,7 @@ Collection failures are stored as degraded events without deleting the last good
 - **Change:** current 7/30-day tokens versus the preceding equal-length period.
 - **Cache:** cache-read plus cache-creation tokens.
 - **Estimated cost:** CodexBar's `totalCost`; Token Pulse does not apply a second pricing model.
+- **Subscription cost:** optional monthly values from `TOKEN_PULSE_SUBSCRIPTIONS`; these are displayed separately and are not added to usage cost.
 
 SQLite runs in WAL mode. The database and provider credentials must not be placed in a public web root or committed to source control.
 

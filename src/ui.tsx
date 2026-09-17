@@ -219,6 +219,41 @@ const MetricCard: FC<{
   </article>
 );
 
+const SubscriptionCard: FC<{
+  subscriptions: DashboardData["subscriptions"];
+  totalUsd: number;
+}> = ({ subscriptions, totalUsd }) => (
+  <article class="panel p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="metric-label">Monthly subscriptions</p>
+        <h2 class="mt-1 text-base font-semibold text-white">
+          All subscription costs
+        </h2>
+      </div>
+      <strong class="font-mono text-2xl font-semibold tracking-tight text-teal-300">
+        {dollars.format(totalUsd)}
+      </strong>
+    </div>
+    {subscriptions.length > 0 ? (
+      <ul class="mt-5 divide-y divide-white/6 border-t border-white/6">
+        {subscriptions.map((subscription) => (
+          <li class="flex items-center justify-between gap-4 py-3 text-sm">
+            <span class="text-slate-300">{subscription.name}</span>
+            <span class="font-mono text-slate-400">
+              {dollars.format(subscription.monthlyUsd)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="mt-4 text-sm text-slate-500">
+        Add subscriptions with TOKEN_PULSE_SUBSCRIPTIONS to track monthly costs.
+      </p>
+    )}
+  </article>
+);
+
 const BurnChart: FC<{
   title: string;
   unit: "tokens" | "cost";
@@ -337,6 +372,10 @@ export const Dashboard: FC<{ data: DashboardData }> = ({ data }) => {
           note={change(data.monthChange)}
         />
       </section>
+      <SubscriptionCard
+        subscriptions={data.subscriptions}
+        totalUsd={data.subscriptionTotalUsd}
+      />
       <section class="grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2">
           <BurnChart

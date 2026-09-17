@@ -45,6 +45,22 @@ describe("SQLite storage and aggregates", () => {
     expect(dashboard.history30).toHaveLength(30);
   });
 
+  test("includes configured subscription totals separately from usage", () => {
+    const storage = new Storage(":memory:", [
+      { name: "ChatGPT Plus", monthlyUsd: 20 },
+      { name: "Claude Pro", monthlyUsd: 20.5 },
+    ]);
+    stores.push(storage);
+    storage.save(storageFixture());
+
+    expect(storage.dashboard().subscriptions).toEqual([
+      { name: "ChatGPT Plus", monthlyUsd: 20 },
+      { name: "Claude Pro", monthlyUsd: 20.5 },
+    ]);
+    expect(storage.dashboard().subscriptionTotalUsd).toBe(40.5);
+    expect(storage.dashboard().month.costUsd).toBe(18.5);
+  });
+
   test("preserves the last good data when collection fails", () => {
     const storage = store();
     storage.save(storageFixture());
