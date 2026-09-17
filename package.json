@@ -1,0 +1,28 @@
+{
+  "name": "token-pulse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.tsx",
+    "build:css": "bunx @tailwindcss/cli -i src/styles.css -o public/app.css --minify",
+    "build": "bun run build:css && bun build src/index.tsx --target bun --outdir dist",
+    "start": "bun dist/index.js",
+    "seed": "bun scripts/seed.ts",
+    "format": "biome format --write .",
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "hono": "^4.9.7",
+    "htmx.org": "^2.0.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@tailwindcss/cli": "^4.1.13",
+    "@types/bun": "^1.2.21",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+
+@theme {
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
+}
+
+@layer base {
+  body {
+    background:
+      radial-gradient(
+        circle at 10% -10%,
+        rgb(45 212 191 / 0.09),
+        transparent 34rem
+      ),
+      #080d18;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-white/8 bg-slate-900/75 shadow-xl shadow-black/10 backdrop-blur;
+  }
+
+  .metric-label {
+    @apply text-[0.68rem] font-semibold tracking-[0.16em] text-slate-500 uppercase;
+  }
+}

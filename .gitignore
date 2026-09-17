@@ -1,0 +1,9 @@
+node_modules/
+dist/
+data/
+public/app.css
+*.db
+*.db-shm
+*.db-wal
+.env
+.DS_Store
