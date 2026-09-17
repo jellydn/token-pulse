@@ -413,6 +413,158 @@ export const Dashboard: FC<{ data: DashboardData }> = ({ data }) => {
   );
 };
 
+function kindleTimestamp(value: string | null): string {
+  if (!value) return "Waiting for data";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Update time unknown";
+  return `${parsed.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+}
+
+const KindleWindows: FC<{ windows: AccountState["windows"] }> = ({
+  windows,
+}) =>
+  windows.length === 0 ? (
+    <p class="kindle-empty">No limit windows reported</p>
+  ) : (
+    <div class="kindle-windows">
+      {windows.map((window) => (
+        <div class="kindle-window">
+          <div class="kindle-window-heading">
+            <strong>{window.label}</strong>
+            <strong class="kindle-percent">
+              {Number.isFinite(window.remainingPercent)
+                ? Math.round(window.remainingPercent)
+                : 0}
+              % left
+            </strong>
+          </div>
+          <div class="kindle-meter" aria-hidden="true">
+            <span
+              class="kindle-meter-fill"
+              style={`width:${clampPercent(window.remainingPercent)}%`}
+            />
+          </div>
+          <p class="kindle-reset">{duration(window.resetAt)}</p>
+        </div>
+      ))}
+    </div>
+  );
+
+const KindleProvider: FC<{ provider: ProviderState }> = ({ provider }) => (
+  <section class="kindle-section kindle-provider">
+    <div class="kindle-section-heading">
+      <h2>{provider.name}</h2>
+      <span>{provider.error ?? provider.status?.label ?? "Usage limits"}</span>
+    </div>
+    {provider.accounts && provider.accounts.length > 0 ? (
+      <div>
+        {provider.accounts.map((account) => (
+          <div class="kindle-account">
+            <h3>{account.label}</h3>
+            <KindleWindows windows={account.windows} />
+          </div>
+        ))}
+      </div>
+    ) : (
+      <KindleWindows windows={provider.windows} />
+    )}
+  </section>
+);
+
+export const KindleDashboard: FC<{ data: DashboardData }> = ({ data }) => {
+  if (!data.capturedAt) {
+    return (
+      <section class="kindle-section kindle-empty-state">
+        <h2>Waiting for the first snapshot</h2>
+        <p>Token Pulse will retry automatically.</p>
+      </section>
+    );
+  }
+
+  return (
+    <div>
+      {data.message && (
+        <p class="kindle-notice" role="status">
+          {data.message}
+        </p>
+      )}
+      {data.providers.length > 0 ? (
+        data.providers.map((provider) => <KindleProvider provider={provider} />)
+      ) : (
+        <section class="kindle-section kindle-empty-state">
+          <h2>No providers available</h2>
+          <p>Check the CodexBar connection on the Token Pulse host.</p>
+        </section>
+      )}
+      <section class="kindle-summary" aria-label="Today's usage summary">
+        <div class="kindle-stat">
+          <span>Tokens today</span>
+          <strong>{compact.format(data.today.tokens)}</strong>
+        </div>
+        <div class="kindle-stat">
+          <span>Estimated cost</span>
+          <strong>{dollars.format(data.today.costUsd)}</strong>
+        </div>
+        <div class="kindle-stat kindle-stat-wide">
+          <span>Top project</span>
+          <strong>Not reported</strong>
+          <small>Project usage is not available in the normalized feed.</small>
+        </div>
+      </section>
+      <p class="kindle-updated">
+        Last updated:{" "}
+        <time datetime={data.capturedAt}>
+          {kindleTimestamp(data.capturedAt)}
+        </time>
+      </p>
+    </div>
+  );
+};
+
+export const KindlePage: FC<{ data: DashboardData }> = ({ data }) => (
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="color-scheme" content="light" />
+      <meta name="theme-color" content="#ffffff" />
+      <title>Token Pulse · Kindle</title>
+      <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+      <link rel="stylesheet" href="/assets/kindle.css" />
+    </head>
+    <body>
+      <div class="kindle-shell">
+        <header class="kindle-header">
+          <div>
+            <h1>Token Pulse</h1>
+            <p>E-ink usage dashboard</p>
+          </div>
+          <button id="kindle-refresh" type="button">
+            Refresh
+          </button>
+        </header>
+        <p
+          id="kindle-refresh-status"
+          class="kindle-refresh-status"
+          aria-live="polite"
+        >
+          Auto-refreshes every 10 minutes
+        </p>
+        <main id="kindle-dashboard">
+          <KindleDashboard data={data} />
+        </main>
+        <noscript>
+          <p class="kindle-noscript">
+            Automatic updates need JavaScript. <a href="/kindle">Reload data</a>
+            .
+          </p>
+        </noscript>
+      </div>
+      <script src="/assets/kindle.js" />
+    </body>
+  </html>
+);
+
 export const Page: FC<{ children: unknown }> = ({ children }) => (
   <html lang="en" class="bg-[#080d18]">
     <head>

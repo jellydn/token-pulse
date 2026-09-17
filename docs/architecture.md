@@ -23,7 +23,7 @@ Provider sessions and local logs
                      Browser dashboard
 ```
 
-Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the dashboard fragment every 60 seconds. Tailwind produces one static CSS file during the build.
+Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the main dashboard fragment every 60 seconds. The dedicated Kindle page uses a tiny dependency-free XHR helper to replace its fragment every 10 minutes and avoid full-page reloads. Tailwind produces one static CSS file for the main dashboard; the e-ink route uses a separate minimal monochrome stylesheet for older browser compatibility.
 
 ## Collection and storage
 
@@ -54,5 +54,7 @@ SQLite runs in WAL mode. The database and provider credentials must not be place
 | --- | --- |
 | `GET /` | Complete server-rendered dashboard |
 | `GET /partials/dashboard` | HTMX dashboard fragment |
+| `GET /kindle` | Complete Kindle/e-ink dashboard |
+| `GET /partials/kindle` | Server-rendered Kindle refresh fragment |
 | `GET /api/dashboard` | Normalized dashboard JSON |
 | `GET /healthz` | Process health |

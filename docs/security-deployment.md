@@ -72,6 +72,8 @@ Token Pulse also binds to `127.0.0.1` by default. For remote access, expose **on
 
 Token Pulse has no built-in user authentication. Do not bind it to a public interface without an authenticated proxy. The dashboard contains project paths and usage details that can be sensitive.
 
+The `/kindle` view follows the same boundary. It fetches a rendered fragment from Token Pulse and never calls CodexBar, so the dashboard bearer token is not sent to the device. A Kindle on the LAN or Internet must still reach Token Pulse through Tailscale policy or Cloudflare Access; the e-ink layout is not an authentication mechanism.
+
 ## Production process model
 
 A small host runs two required foreground services and one optional access service:

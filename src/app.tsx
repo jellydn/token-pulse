@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import type { Storage } from "./storage";
-import { Dashboard, Page } from "./ui";
+import { Dashboard, KindleDashboard, KindlePage, Page } from "./ui";
 
 export function createApp(storage: Storage): Hono {
   const app = new Hono();
@@ -14,6 +14,8 @@ export function createApp(storage: Storage): Hono {
   });
 
   app.get("/assets/app.css", serveStatic({ path: "./public/app.css" }));
+  app.get("/assets/kindle.css", serveStatic({ path: "./public/kindle.css" }));
+  app.get("/assets/kindle.js", serveStatic({ path: "./public/kindle.js" }));
   app.get("/assets/logo.svg", serveStatic({ path: "./public/logo.svg" }));
   app.get("/assets/favicon.svg", serveStatic({ path: "./public/favicon.svg" }));
   app.get("/favicon.ico", serveStatic({ path: "./public/favicon.ico" }));
@@ -32,6 +34,13 @@ export function createApp(storage: Storage): Hono {
   app.get("/api/dashboard", (context) => context.json(storage.dashboard()));
   app.get("/partials/dashboard", (context) =>
     context.html(<Dashboard data={storage.dashboard()} />),
+  );
+  app.get("/partials/kindle", (context) => {
+    context.header("Cache-Control", "no-store");
+    return context.html(<KindleDashboard data={storage.dashboard()} />);
+  });
+  app.get("/kindle", (context) =>
+    context.html(<KindlePage data={storage.dashboard()} />),
   );
   app.get("/", (context) =>
     context.html(
