@@ -10,6 +10,7 @@
       "**",
       "!!dist",
       "!!public/app.css",
+      "!!public/htmx.min.js",
       "!!node_modules",
       "!!data",
       "!!.amp"

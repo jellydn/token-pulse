@@ -23,15 +23,14 @@ Provider sessions and local logs
                      Browser dashboard
 ```
 
-Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the dashboard fragment every 60 seconds and when project sorting changes. Tailwind produces one static CSS file during the build.
+Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the dashboard fragment every 60 seconds. Tailwind produces one static CSS file during the build.
 
 ## Collection and storage
 
-The scheduler collects every 300 seconds by default. The adapter has three implementations:
+The scheduler collects every 300 seconds by default. The adapter has two implementations:
 
 - `http`: reads CodexBar dashboard schema version 1 and `/cost` from loopback.
 - `cli`: executes the equivalent CodexBar commands.
-- `demo`: produces representative deterministic history without credentials.
 
 Each successful collection stores the full normalized snapshot. Daily provider rows use `(provider, date)` as their key because CodexBar reports cumulative daily values; replacement prevents five-minute polls from counting the same tokens more than once. Project rows retain the latest provider report. Raw normalized snapshots remain available for historical diagnosis.
 
@@ -53,6 +52,6 @@ SQLite runs in WAL mode. The database and provider credentials must not be place
 | Route | Purpose |
 | --- | --- |
 | `GET /` | Complete server-rendered dashboard |
-| `GET /partials/dashboard` | HTMX dashboard fragment; accepts `sort=tokens|cost|recent` |
+| `GET /partials/dashboard` | HTMX dashboard fragment |
 | `GET /api/dashboard` | Normalized dashboard JSON |
 | `GET /healthz` | Process health |

@@ -8,6 +8,12 @@ export interface LimitWindow {
   resetAt: string | null;
 }
 
+export interface AccountState {
+  label: string;
+  windows: LimitWindow[];
+  updatedAt: string | null;
+}
+
 export interface ProviderState {
   id: string;
   name: string;
@@ -18,6 +24,7 @@ export interface ProviderState {
     updatedAt: string | null;
   } | null;
   windows: LimitWindow[];
+  accounts: AccountState[] | null;
   error: string | null;
   updatedAt: string | null;
 }
@@ -34,22 +41,11 @@ export interface DailyUsage {
   costUsd: number | null;
 }
 
-export interface ProjectUsage {
-  provider: string;
-  name: string;
-  path: string | null;
-  totalTokens: number | null;
-  costUsd: number | null;
-  sessions: number | null;
-  lastActivityAt: string | null;
-}
-
 export interface NormalizedSnapshot {
   capturedAt: string;
   source: string;
   providers: ProviderState[];
   daily: DailyUsage[];
-  projects: ProjectUsage[];
   degraded: boolean;
   message: string | null;
 }
@@ -74,7 +70,6 @@ export interface DashboardData {
   monthChange: number | null;
   history7: Array<{ date: string; tokens: number; costUsd: number }>;
   history30: Array<{ date: string; tokens: number; costUsd: number }>;
-  projects: ProjectUsage[];
   degraded: boolean;
   message: string | null;
 }

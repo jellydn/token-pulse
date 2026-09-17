@@ -1,7 +1,7 @@
 import type { FC } from "hono/jsx";
 import type {
+  AccountState,
   DashboardData,
-  ProjectUsage,
   ProviderState,
   UsageTotals,
 } from "./types";
@@ -17,9 +17,11 @@ const dollars = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
-function duration(until: string | null): string {
+export function duration(until: string | null): string {
   if (!until) return "Reset unknown";
-  const milliseconds = new Date(until).getTime() - Date.now();
+  const parsed = new Date(until).getTime();
+  if (Number.isNaN(parsed)) return "Reset unknown";
+  const milliseconds = parsed - Date.now();
   if (milliseconds <= 0) return "Reset due";
   const hours = Math.floor(milliseconds / 3_600_000);
   const minutes = Math.floor((milliseconds % 3_600_000) / 60_000);
@@ -27,12 +29,11 @@ function duration(until: string | null): string {
   return `Resets in ${hours}h ${minutes}m`;
 }
 
-function relative(value: string | null): string {
+export function relative(value: string | null): string {
   if (!value) return "Unknown";
-  const days = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000),
-  );
+  const parsed = new Date(value).getTime();
+  if (Number.isNaN(parsed)) return "Unknown";
+  const days = Math.max(0, Math.floor((Date.now() - parsed) / 86_400_000));
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";
   return `${days} days ago`;
@@ -43,21 +44,133 @@ function change(value: number | null): string {
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}% vs prior`;
 }
 
+export function clampPercent(value: number | null): number {
+  if (value === null || !Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(1, value));
+}
+
+function usageLevel(
+  windows: Array<{ usedPercent: number }>,
+): "critical" | "warning" | "ok" | null {
+  if (windows.length === 0) return null;
+  const worst = Math.max(
+    ...windows.map((window) =>
+      Number.isFinite(window.usedPercent) ? window.usedPercent : 0,
+    ),
+  );
+  if (worst >= 100) return "critical";
+  if (worst >= 80) return "warning";
+  return "ok";
+}
+
+function usageLabel(windows: Array<{ usedPercent: number }>): string | null {
+  const level = usageLevel(windows);
+  if (!level) return null;
+  if (level === "critical") return "Limit reached";
+  if (level === "warning") return "High usage";
+  return "Ready";
+}
+
 const StatusDot: FC<{ provider: ProviderState }> = ({ provider }) => {
-  const level = provider.error
-    ? "critical"
-    : (provider.status?.level ?? "unknown");
+  if (provider.error) {
+    return (
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400">
+        <span class="h-2 w-2 rounded-full bg-rose-400" />
+        {provider.error}
+      </span>
+    );
+  }
+  if (provider.status) {
+    const color = {
+      ok: "bg-emerald-400",
+      warning: "bg-amber-400",
+      critical: "bg-rose-400",
+      unknown: "bg-slate-500",
+    }[provider.status.level];
+    return (
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400">
+        <span class={`h-2 w-2 rounded-full ${color}`} />
+        {provider.status.label}
+      </span>
+    );
+  }
+  const label = usageLabel(provider.windows);
+  if (!label) return null;
   const color = {
-    ok: "bg-emerald-400",
-    warning: "bg-amber-400",
-    critical: "bg-rose-400",
-    unknown: "bg-slate-500",
-  }[level];
+    Ready: "bg-emerald-400",
+    "High usage": "bg-amber-400",
+    "Limit reached": "bg-rose-400",
+  }[label];
   return (
     <span class="inline-flex items-center gap-2 text-xs text-slate-400">
       <span class={`h-2 w-2 rounded-full ${color}`} />
-      {provider.error ?? provider.status?.label ?? "Status unknown"}
+      {label}
     </span>
+  );
+};
+
+const WindowBars: FC<{ windows: AccountState["windows"] }> = ({ windows }) =>
+  windows.length === 0 ? (
+    <p class="rounded-xl bg-white/3 p-4 text-sm text-slate-400">
+      No limit windows reported.
+    </p>
+  ) : (
+    <div class="space-y-5">
+      {windows.map((window) => (
+        <div>
+          <div class="mb-2 flex items-end justify-between">
+            <div>
+              <span class="text-sm font-medium text-slate-200">
+                {window.label}
+              </span>
+              <p class="mt-0.5 text-xs text-slate-500">
+                {duration(window.resetAt)}
+              </p>
+            </div>
+            <span class="font-mono text-lg font-semibold text-teal-300">
+              {Number.isFinite(window.remainingPercent)
+                ? Math.round(window.remainingPercent)
+                : 0}
+              %
+              <span class="ml-1 text-[0.65rem] font-normal text-slate-500">
+                LEFT
+              </span>
+            </span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+            <div
+              class={`h-full rounded-full ${window.remainingPercent < 20 ? "bg-rose-400" : "bg-teal-400"}`}
+              style={`width:${clampPercent(window.remainingPercent)}%`}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+const AccountBlock: FC<{ account: AccountState }> = ({ account }) => {
+  const label = usageLabel(account.windows);
+  const color =
+    label === "Limit reached"
+      ? "bg-rose-400"
+      : label === "High usage"
+        ? "bg-amber-400"
+        : "bg-emerald-400";
+  return (
+    <div class="rounded-xl bg-white/3 p-4">
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <p class="truncate text-sm font-medium text-slate-200">
+          {account.label}
+        </p>
+        {label && (
+          <span class="inline-flex shrink-0 items-center gap-2 text-xs text-slate-400">
+            <span class={`h-2 w-2 rounded-full ${color}`} />
+            {label}
+          </span>
+        )}
+      </div>
+      <WindowBars windows={account.windows} />
+    </div>
   );
 };
 
@@ -70,39 +183,14 @@ const ProviderCard: FC<{ provider: ProviderState }> = ({ provider }) => (
       </div>
       <StatusDot provider={provider} />
     </div>
-    {provider.windows.length === 0 ? (
-      <p class="rounded-xl bg-white/3 p-4 text-sm text-slate-400">
-        No limit windows reported.
-      </p>
-    ) : (
-      <div class="space-y-5">
-        {provider.windows.map((window) => (
-          <div>
-            <div class="mb-2 flex items-end justify-between">
-              <div>
-                <span class="text-sm font-medium text-slate-200">
-                  {window.label}
-                </span>
-                <p class="mt-0.5 text-xs text-slate-500">
-                  {duration(window.resetAt)}
-                </p>
-              </div>
-              <span class="font-mono text-lg font-semibold text-teal-300">
-                {Math.round(window.remainingPercent)}%
-                <span class="ml-1 text-[0.65rem] font-normal text-slate-500">
-                  LEFT
-                </span>
-              </span>
-            </div>
-            <div class="h-2 overflow-hidden rounded-full bg-slate-800">
-              <div
-                class={`h-full rounded-full ${window.remainingPercent < 20 ? "bg-rose-400" : "bg-teal-400"}`}
-                style={`width:${Math.max(1, window.remainingPercent)}%`}
-              />
-            </div>
-          </div>
+    {provider.accounts && provider.accounts.length > 0 ? (
+      <div class="space-y-4">
+        {provider.accounts.map((account) => (
+          <AccountBlock account={account} />
         ))}
       </div>
+    ) : (
+      <WindowBars windows={provider.windows} />
     )}
   </article>
 );
@@ -206,137 +294,7 @@ const Breakdown: FC<{ totals: UsageTotals }> = ({ totals }) => {
   );
 };
 
-const SortLink: FC<{ sort: string; label: string; active: boolean }> = ({
-  sort,
-  label,
-  active,
-}) => (
-  <a
-    href={`/?sort=${sort}`}
-    hx-get={`/partials/dashboard?sort=${sort}`}
-    hx-target="#dashboard"
-    hx-push-url={`/?sort=${sort}`}
-    class={`rounded-lg px-3 py-1.5 text-xs transition ${active ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-200"}`}
-  >
-    {label}
-  </a>
-);
-
-const Projects: FC<{ projects: ProjectUsage[]; sort: string }> = ({
-  projects,
-  sort,
-}) => (
-  <section class="panel overflow-hidden">
-    <div class="flex flex-col gap-4 border-b border-white/8 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <div>
-        <p class="metric-label">Attribution</p>
-        <h2 class="mt-1 text-lg font-semibold text-white">Project usage</h2>
-      </div>
-      <nav class="flex rounded-xl bg-black/20 p-1" aria-label="Sort projects">
-        <SortLink sort="tokens" label="Tokens" active={sort === "tokens"} />
-        <SortLink sort="cost" label="Cost" active={sort === "cost"} />
-        <SortLink sort="recent" label="Recent" active={sort === "recent"} />
-      </nav>
-    </div>
-    {projects.length === 0 ? (
-      <p class="p-8 text-center text-sm text-slate-500">
-        Project attribution is not available from the configured provider.
-      </p>
-    ) : (
-      <>
-        <div class="divide-y divide-white/5 sm:hidden">
-          {projects.map((project) => (
-            <article class="p-5">
-              <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                  <p class="truncate font-medium text-slate-200">
-                    {project.name}
-                  </p>
-                  <p class="mt-1 truncate font-mono text-[0.65rem] text-slate-600">
-                    {project.provider} · {project.path ?? "path unavailable"}
-                  </p>
-                </div>
-                <span class="shrink-0 text-xs text-slate-500">
-                  {relative(project.lastActivityAt)}
-                </span>
-              </div>
-              <dl class="mt-4 grid grid-cols-3 gap-3">
-                <div>
-                  <dt class="metric-label">Tokens</dt>
-                  <dd class="mt-1 font-mono text-sm text-slate-300">
-                    {project.totalTokens === null
-                      ? "—"
-                      : compact.format(project.totalTokens)}
-                  </dd>
-                </div>
-                <div>
-                  <dt class="metric-label">Est. cost</dt>
-                  <dd class="mt-1 font-mono text-sm text-teal-300">
-                    {project.costUsd === null
-                      ? "—"
-                      : dollars.format(project.costUsd)}
-                  </dd>
-                </div>
-                <div>
-                  <dt class="metric-label">Sessions</dt>
-                  <dd class="mt-1 text-sm text-slate-500">
-                    {project.sessions ?? "—"}
-                  </dd>
-                </div>
-              </dl>
-            </article>
-          ))}
-        </div>
-        <div class="hidden overflow-x-auto sm:block">
-          <table class="w-full min-w-[42rem] text-left text-sm">
-            <thead class="text-[0.65rem] tracking-widest text-slate-600 uppercase">
-              <tr>
-                <th class="px-6 py-3 font-medium">Project</th>
-                <th class="px-4 py-3 text-right font-medium">Tokens</th>
-                <th class="px-4 py-3 text-right font-medium">Est. cost</th>
-                <th class="px-4 py-3 text-right font-medium">Sessions</th>
-                <th class="px-6 py-3 text-right font-medium">Activity</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-white/5">
-              {projects.map((project) => (
-                <tr class="hover:bg-white/3">
-                  <td class="px-6 py-4">
-                    <p class="font-medium text-slate-200">{project.name}</p>
-                    <p class="mt-0.5 max-w-xs truncate font-mono text-[0.65rem] text-slate-600">
-                      {project.provider} · {project.path ?? "path unavailable"}
-                    </p>
-                  </td>
-                  <td class="px-4 py-4 text-right font-mono text-slate-300">
-                    {project.totalTokens === null
-                      ? "—"
-                      : compact.format(project.totalTokens)}
-                  </td>
-                  <td class="px-4 py-4 text-right font-mono text-teal-300">
-                    {project.costUsd === null
-                      ? "—"
-                      : dollars.format(project.costUsd)}
-                  </td>
-                  <td class="px-4 py-4 text-right text-slate-500">
-                    {project.sessions ?? "—"}
-                  </td>
-                  <td class="px-6 py-4 text-right text-slate-500">
-                    {relative(project.lastActivityAt)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </>
-    )}
-  </section>
-);
-
-export const Dashboard: FC<{ data: DashboardData; sort: string }> = ({
-  data,
-  sort,
-}) => {
+export const Dashboard: FC<{ data: DashboardData }> = ({ data }) => {
   if (!data.capturedAt) {
     return (
       <div class="panel p-12 text-center">
@@ -412,7 +370,6 @@ export const Dashboard: FC<{ data: DashboardData; sort: string }> = ({
           </div>
         </div>
       </section>
-      <Projects projects={data.projects} sort={sort} />
     </div>
   );
 };

@@ -7,13 +7,24 @@ const config = loadConfig();
 const storage = new Storage(config.dbPath);
 const adapter = createCodexBarAdapter(config);
 
+let inFlight: Promise<void> | null = null;
+
 async function collect(): Promise<void> {
+  if (inFlight) return;
+  const pending = (async () => {
+    try {
+      storage.save(await adapter.collect());
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      storage.recordFailure(config.source, `Snapshot failed: ${message}`);
+      console.error(`Token Pulse snapshot failed: ${message}`);
+    }
+  })();
+  inFlight = pending;
   try {
-    storage.save(await adapter.collect());
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    storage.recordFailure(config.source, `Snapshot failed: ${message}`);
-    console.error(`Token Pulse snapshot failed: ${message}`);
+    await pending;
+  } finally {
+    if (inFlight === pending) inFlight = null;
   }
 }
 
@@ -26,8 +37,14 @@ const server = Bun.serve({
   fetch: createApp(storage).fetch,
 });
 
-function shutdown(): void {
+async function shutdown(): Promise<void> {
   clearInterval(timer);
+  if (inFlight) {
+    await Promise.race([
+      inFlight,
+      new Promise<void>((resolve) => setTimeout(resolve, 5_000)),
+    ]);
+  }
   server.stop();
   storage.close();
 }
@@ -36,3 +53,10 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 console.log(`Token Pulse listening on ${server.url} (${config.source} source)`);
+
+if (!["127.0.0.1", "localhost", "::1"].includes(config.host)) {
+  console.warn(
+    "WARNING: Token Pulse is bound to a non-loopback address and has no built-in authentication. " +
+      "Expose it only behind authenticated access.",
+  );
+}

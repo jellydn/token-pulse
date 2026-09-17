@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { createApp } from "../src/app";
+import { attachCodexAccounts, normalizeCodexBar } from "../src/codexbar";
 import { Storage } from "../src/storage";
-import { storageFixture } from "./fixtures";
+import {
+  codexAccountsFixture,
+  costFixture,
+  dashboardFixture,
+  storageFixture,
+} from "./fixtures";
 
 const stores: Storage[] = [];
 
@@ -24,19 +30,33 @@ describe("key routes", () => {
 
     expect(response.status).toBe(200);
     expect(html).toContain('hx-trigger="every 60s"');
-    expect(html).toContain("Project usage");
     expect(html).toContain("Last 30 days");
   });
 
-  test("returns a sortable partial", async () => {
+  test("renders one block per codex account with usage status", async () => {
+    const storage = new Storage(":memory:");
+    stores.push(storage);
+    storage.save(
+      attachCodexAccounts(
+        normalizeCodexBar(dashboardFixture, costFixture, "fixture"),
+        codexAccountsFixture,
+      ),
+    );
+    const app = createApp(storage);
+    const html = await (await app.request("/")).text();
+
+    expect(html).toContain("dung@acx.net");
+    expect(html).toContain("dunghd.it@gmail.com");
+    expect(html).toContain("High usage");
+  });
+
+  test("returns a partial without the page shell", async () => {
     const { app } = setup();
-    const response = await app.request("/partials/dashboard?sort=cost");
+    const response = await app.request("/partials/dashboard");
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html.indexOf("small-recent")).toBeLessThan(
-      html.indexOf("large-old"),
-    );
+    expect(html).toContain("Last 30 days");
     expect(html).not.toContain("<html");
   });
 
@@ -47,5 +67,35 @@ describe("key routes", () => {
 
     expect((await dashboard.json()).history30).toHaveLength(30);
     expect(await health.json()).toEqual({ status: "ok" });
+  });
+
+  test("sets security headers", async () => {
+    const { app } = setup();
+    const response = await app.request("/");
+
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("Referrer-Policy")).toBe("same-origin");
+    expect(response.headers.get("X-Frame-Options")).toBe("DENY");
+  });
+
+  test("serves brand assets and references them in the page", async () => {
+    const { app } = setup();
+    const page = await (await app.request("/")).text();
+
+    expect(page).toContain('href="/assets/favicon.svg"');
+    expect(page).toContain('href="/favicon.ico"');
+    expect(page).toContain('src="/assets/logo.svg"');
+
+    for (const path of [
+      "/assets/logo.svg",
+      "/assets/favicon.svg",
+      "/favicon.ico",
+      "/apple-touch-icon.png",
+      "/icon-192.png",
+      "/icon-512.png",
+      "/site.webmanifest",
+    ]) {
+      expect((await app.request(path)).status).toBe(200);
+    }
   });
 });

@@ -9,7 +9,6 @@
     "build:css": "bunx @tailwindcss/cli -i src/styles.css -o public/app.css --minify",
     "build": "bun run build:css && bun build src/index.tsx --target bun --outdir dist",
     "start": "bun dist/index.js",
-    "seed": "bun scripts/seed.ts",
     "format": "biome format --write .",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",

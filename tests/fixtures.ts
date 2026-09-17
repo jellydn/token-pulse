@@ -50,15 +50,56 @@ export const costFixture = [
         totalCost: 0.031,
       },
     ],
-    projects: [
-      {
-        name: "token-pulse",
-        path: "/work/token-pulse",
-        totalTokens: 7000,
-        totalCost: 0.18,
-        daily: [{ date: "2026-09-17" }],
+  },
+];
+
+export const codexAccountsFixture = [
+  {
+    account: "dung@acx.net",
+    usage: {
+      accountEmail: "dung@acx.net",
+      updatedAt: "2026-09-17T03:00:00Z",
+      primary: null,
+      secondary: {
+        usedPercent: 93,
+        windowMinutes: 10080,
+        resetsAt: "2026-09-19T10:14:27Z",
+        resetDescription: "Sep 19 at 6:14 PM",
       },
-    ],
+      tertiary: null,
+      extraRateWindows: [
+        {
+          id: "codex-spark",
+          title: "Codex Spark 5-hour",
+          window: {
+            usedPercent: 0,
+            windowMinutes: 300,
+            resetsAt: "2026-09-17T08:00:47Z",
+            resetDescription: "4:00 PM",
+          },
+        },
+      ],
+    },
+  },
+  {
+    account: "dunghd.it@gmail.com",
+    usage: {
+      accountEmail: "dunghd.it@gmail.com",
+      updatedAt: "2026-09-17T03:00:00Z",
+      primary: {
+        usedPercent: 0,
+        windowMinutes: 300,
+        resetsAt: "2026-09-17T08:02:52Z",
+        resetDescription: "4:02 PM",
+      },
+      secondary: {
+        usedPercent: 95,
+        windowMinutes: 10080,
+        resetsAt: "2026-09-22T07:38:47Z",
+        resetDescription: "Sep 22 at 3:38 PM",
+      },
+      tertiary: null,
+    },
   },
 ];
 
@@ -85,26 +126,6 @@ export function storageFixture(): NormalizedSnapshot {
       totalTokens: daysAgo < 7 ? 100 : 50,
       costUsd: daysAgo < 7 ? 1 : 0.5,
     })),
-    projects: [
-      {
-        provider: "codex",
-        name: "small-recent",
-        path: null,
-        totalTokens: 10,
-        costUsd: 9,
-        sessions: null,
-        lastActivityAt: new Date().toISOString(),
-      },
-      {
-        provider: "codex",
-        name: "large-old",
-        path: null,
-        totalTokens: 100,
-        costUsd: 1,
-        sessions: null,
-        lastActivityAt: new Date(Date.now() - 86_400_000).toISOString(),
-      },
-    ],
     degraded: false,
     message: null,
   };

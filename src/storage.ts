@@ -1,12 +1,7 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import type {
-  DashboardData,
-  NormalizedSnapshot,
-  ProjectUsage,
-  UsageTotals,
-} from "./types";
+import type { DashboardData, NormalizedSnapshot, UsageTotals } from "./types";
 
 const EMPTY_TOTALS: UsageTotals = {
   tokens: 0,
@@ -98,17 +93,6 @@ export class Storage {
         observed_at TEXT NOT NULL,
         PRIMARY KEY (provider, date)
       );
-      CREATE TABLE IF NOT EXISTS project_usage (
-        provider TEXT NOT NULL,
-        name TEXT NOT NULL,
-        path TEXT,
-        total_tokens INTEGER,
-        cost_usd REAL,
-        sessions INTEGER,
-        last_activity_at TEXT,
-        observed_at TEXT NOT NULL,
-        PRIMARY KEY (provider, name)
-      );
       CREATE INDEX IF NOT EXISTS snapshots_captured_at ON snapshots(captured_at DESC);
       CREATE INDEX IF NOT EXISTS daily_usage_date ON daily_usage(date);
     `);
@@ -128,7 +112,9 @@ export class Storage {
           JSON.stringify(snapshot),
         );
       const dailyStatement = this.db.query(`
-        INSERT INTO daily_usage VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO daily_usage
+          (provider, date, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, reasoning_tokens, total_tokens, cost_usd, observed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(provider, date) DO UPDATE SET
           input_tokens=excluded.input_tokens, output_tokens=excluded.output_tokens,
           cache_read_tokens=excluded.cache_read_tokens, cache_creation_tokens=excluded.cache_creation_tokens,
@@ -149,24 +135,11 @@ export class Storage {
           snapshot.capturedAt,
         );
       }
-      const projectStatement = this.db.query(`
-        INSERT INTO project_usage VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(provider, name) DO UPDATE SET
-          path=excluded.path, total_tokens=excluded.total_tokens, cost_usd=excluded.cost_usd,
-          sessions=excluded.sessions, last_activity_at=excluded.last_activity_at, observed_at=excluded.observed_at
-      `);
-      for (const project of snapshot.projects) {
-        projectStatement.run(
-          project.provider,
-          project.name,
-          project.path,
-          project.totalTokens,
-          project.costUsd,
-          project.sessions,
-          project.lastActivityAt,
-          snapshot.capturedAt,
-        );
-      }
+      this.db
+        .query(
+          "DELETE FROM snapshots WHERE id < (SELECT COALESCE(MAX(id) - 999, 0) FROM snapshots)",
+        )
+        .run();
     });
     transaction();
   }
@@ -179,20 +152,28 @@ export class Storage {
       .run(new Date().toISOString(), source, message);
   }
 
-  dashboard(sort: "tokens" | "cost" | "recent" = "tokens"): DashboardData {
+  dashboard(): DashboardData {
     const latestEvent = this.db
       .query<SnapshotRow, []>(
         "SELECT captured_at, source, degraded, message, payload_json FROM snapshots ORDER BY id DESC LIMIT 1",
       )
       .get();
-    const latestSuccess = this.db
+    const latestSuccessRows = this.db
       .query<SnapshotRow, []>(
-        "SELECT captured_at, source, degraded, message, payload_json FROM snapshots WHERE payload_json IS NOT NULL ORDER BY id DESC LIMIT 1",
+        "SELECT captured_at, source, degraded, message, payload_json FROM snapshots WHERE payload_json IS NOT NULL ORDER BY id DESC",
       )
-      .get();
-    const snapshot = latestSuccess?.payload_json
-      ? (JSON.parse(latestSuccess.payload_json) as NormalizedSnapshot)
-      : null;
+      .all();
+    let snapshot: NormalizedSnapshot | null = null;
+    let snapshotRow: SnapshotRow | null = null;
+    for (const row of latestSuccessRows) {
+      if (!row.payload_json) continue;
+      try {
+        snapshot = JSON.parse(row.payload_json) as NormalizedSnapshot;
+        snapshotRow = row;
+        break;
+      } catch {}
+    }
+    const unreadable = latestSuccessRows.length > 0 && snapshotRow === null;
     const rows = this.db
       .query<DailyRow, [string]>(`SELECT date,
         SUM(total_tokens) total_tokens, SUM(cost_usd) cost_usd, SUM(input_tokens) input_tokens,
@@ -219,23 +200,9 @@ export class Storage {
     const priorWeek = totalRows(range(7, 13));
     const month = totalRows(range(0, 29));
     const priorMonth = totalRows(range(30, 59));
-    const order =
-      sort === "cost"
-        ? "cost_usd DESC"
-        : sort === "recent"
-          ? "last_activity_at DESC"
-          : "total_tokens DESC";
-    const projects = this.db
-      .query<
-        ProjectUsage,
-        []
-      >(`SELECT provider, name, path, total_tokens totalTokens,
-        cost_usd costUsd, sessions, last_activity_at lastActivityAt FROM project_usage ORDER BY ${order}`)
-      .all();
-
     return {
-      capturedAt: latestSuccess?.captured_at ?? null,
-      source: latestSuccess?.source ?? null,
+      capturedAt: snapshotRow?.captured_at ?? null,
+      source: snapshotRow?.source ?? null,
       providers: snapshot?.providers ?? [],
       today: totalRows(range(0, 0)),
       week,
@@ -244,9 +211,10 @@ export class Storage {
       monthChange: percentChange(month.tokens, priorMonth.tokens),
       history7: history(7),
       history30: history(30),
-      projects,
-      degraded: latestEvent?.degraded === 1,
-      message: latestEvent?.message ?? null,
+      degraded: unreadable ? true : latestEvent?.degraded === 1,
+      message: unreadable
+        ? "Stored snapshot is unreadable"
+        : (latestEvent?.message ?? null),
     };
   }
 
