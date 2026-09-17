@@ -38,7 +38,7 @@ describe("CodexBar normalization", () => {
 
     expect(accounts).toHaveLength(2);
     expect(accounts[0]).toMatchObject({
-      label: "dung@acx.net",
+      label: "d***@acx.net",
     });
     expect(accounts[0]?.windows.map((window) => window.label)).toEqual([
       "Weekly",
@@ -57,6 +57,25 @@ describe("CodexBar normalization", () => {
     );
 
     expect(snapshot.providers[0]?.accounts).toHaveLength(2);
+  });
+
+  test("redacts account emails to first letter plus domain", () => {
+    const accounts = normalizeCodexAccounts([
+      { account: "dung@acx.net", usage: { primary: { usedPercent: 10 } } },
+      {
+        usage: {
+          accountEmail: "someone@example.com",
+          primary: { usedPercent: 10 },
+        },
+      },
+      { account: "local-only", usage: { primary: { usedPercent: 10 } } },
+    ]);
+
+    expect(accounts.map((account) => account.label)).toEqual([
+      "d***@acx.net",
+      "s***@example.com",
+      "local-only",
+    ]);
   });
 
   test("clamps window percentages to 0..100", () => {

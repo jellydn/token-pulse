@@ -16,6 +16,7 @@
 - `TOKEN_PULSE_DB` defaults to `./data/token-pulse.db`. Use a separate path for manual experiments; route tests use `new Storage(":memory:")` and close stores after each test.
 - CodexBar daily values are cumulative: storage replaces rows keyed by `(provider, date)` rather than adding each poll. Collection failures must preserve the last good snapshot.
 - Preserve unknown token/cost fields at ingestion. Do not invent session counts or apply another pricing model. Reporting periods use UTC calendar days; see `docs/architecture.md` for aggregate definitions.
+- Account emails are masked at ingestion (`d***@example.com`); raw addresses never reach snapshots, the API, or the UI. Non-email labels pass through unchanged.
 
 ## Trust boundary
 

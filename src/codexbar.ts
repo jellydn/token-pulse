@@ -32,6 +32,12 @@ function number(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function redactAccount(value: string): string {
+  const separator = value.indexOf("@");
+  if (separator <= 0) return value;
+  return `${value.slice(0, 1)}***@${value.slice(separator + 1)}`;
+}
+
 function normalizeProvider(value: unknown): ProviderState | null {
   const provider = record(value);
   const id = text(provider.id);
@@ -111,7 +117,7 @@ function normalizeAccount(value: unknown): AccountState | null {
   }
   if (windows.length === 0) return null;
   return {
-    label: accountEmail,
+    label: redactAccount(accountEmail),
     windows,
     updatedAt: text(usage.updatedAt),
   };

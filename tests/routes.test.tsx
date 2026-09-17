@@ -45,8 +45,10 @@ describe("key routes", () => {
     const app = createApp(storage);
     const html = await (await app.request("/")).text();
 
-    expect(html).toContain("dung@acx.net");
-    expect(html).toContain("dunghd.it@gmail.com");
+    expect(html).toContain("d***@acx.net");
+    expect(html).toContain("d***@gmail.com");
+    expect(html).not.toContain("dung@acx.net");
+    expect(html).not.toContain("dunghd.it@gmail.com");
     expect(html).toContain("High usage");
   });
 
