@@ -1,3 +1,4 @@
+import { clampPercent } from "./percent";
 import type {
   AccountState,
   DashboardData,
@@ -27,11 +28,6 @@ export interface DisplayProvider {
   accounts: DisplayAccount[] | null;
 }
 
-export interface DisplayProject {
-  name: string;
-  tokens: number;
-}
-
 export interface DisplayModel {
   updatedAt: string | null;
   degraded: boolean;
@@ -39,15 +35,11 @@ export interface DisplayModel {
   providers: DisplayProvider[];
   today: {
     tokens: number;
+    /** Estimated cost in USD (dashboard `costUsd`). */
     cost: number;
   };
-  /** Always null while the normalized CodexBar feed omits project aggregation. */
-  topProject: DisplayProject | null;
-}
-
-function clampPercent(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(100, Math.max(0, Math.round(value)));
+  /** Null until the normalized feed reports project aggregation. */
+  topProject: null;
 }
 
 function mapWindow(window: LimitWindow): DisplayWindow {
@@ -60,6 +52,7 @@ function mapWindow(window: LimitWindow): DisplayWindow {
 
 function mapAccount(account: AccountState): DisplayAccount {
   return {
+    // Labels are already masked at CodexBar ingestion (emails); non-email labels pass through.
     label: account.label,
     windows: account.windows.map(mapWindow),
   };
@@ -83,31 +76,23 @@ function headlineFromWindows(windows: DisplayWindow[]): {
   };
 }
 
-function collectProviderWindows(provider: ProviderState): DisplayWindow[] {
-  if (provider.accounts && provider.accounts.length > 0) {
-    return provider.accounts.flatMap((account) =>
-      account.windows.map(mapWindow),
-    );
-  }
-  return provider.windows.map(mapWindow);
-}
-
 function mapProvider(provider: ProviderState): DisplayProvider {
-  const windows = collectProviderWindows(provider);
-  const headline = headlineFromWindows(windows);
+  const sourceAccounts = provider.accounts ?? [];
+  const hasAccounts = sourceAccounts.length > 0;
+  const accounts = hasAccounts ? sourceAccounts.map(mapAccount) : null;
+  const windows = hasAccounts ? [] : provider.windows.map(mapWindow);
+  const headlineWindows =
+    accounts !== null
+      ? accounts.flatMap((account) => account.windows)
+      : windows;
+  const headline = headlineFromWindows(headlineWindows);
   return {
     name: provider.name,
     remainingPercent: headline.remainingPercent,
     resetAt: headline.resetAt,
     statusLabel: provider.error ?? provider.status?.label ?? null,
-    windows:
-      provider.accounts && provider.accounts.length > 0
-        ? []
-        : provider.windows.map(mapWindow),
-    accounts:
-      provider.accounts && provider.accounts.length > 0
-        ? provider.accounts.map(mapAccount)
-        : null,
+    windows,
+    accounts,
   };
 }
 
