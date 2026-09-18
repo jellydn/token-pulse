@@ -44,11 +44,21 @@ flags):
 | `FULL_REFRESH_EVERY` | Full panel refresh every N wakes | `6` (~1 hour) |
 | `HTTP_TIMEOUT_MS` | Fetch timeout | `15000` |
 | `SKIP_TLS_VERIFY` | Lab-only: disable TLS cert checks (`1`) | `0` (verify) |
-| `DISPLAY_ROOT_CA` | Optional PEM string for a pinned CA | empty (system roots) |
+| `DISPLAY_ROOT_CA` | PEM string for the HTTPS CA (required unless skip) | empty |
 
-TLS verification is on by default so Tailscale Serve and Cloudflare origins
-work with the board trust store. Set `-DSKIP_TLS_VERIFY=1` only for self-signed
-lab endpoints on a private network — never pair that with a public origin.
+HTTPS fetches verify certificates by default. Arduino-ESP32 `WiFiClientSecure`
+needs explicit trust material, so set `DISPLAY_ROOT_CA` to the PEM of your
+publisher CA (for example the Tailscale or Cloudflare edge CA that signs the
+Serve/Access host). Example build flag:
+
+```text
+-DDISPLAY_ROOT_CA='"-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n"'
+```
+
+Set `-DSKIP_TLS_VERIFY=1` only for self-signed lab endpoints on a private
+network — never pair that with a public origin. An empty `DISPLAY_ROOT_CA` with
+verification enabled fails closed (no fetch) rather than falling back to
+insecure mode.
 
 Partial refresh reduces flicker and power after the first successful paint; a
 periodic full refresh (and the first wake) clears ghosting. Fresh 2xx bodies are
