@@ -28,6 +28,7 @@ Token Pulse reads CodexBar output and turns it into a dashboard you can glance a
 - 🔄 Five-minute collection by default with HTMX dashboard refresh every 60 seconds
 - 📱 Responsive phone and desktop layouts, plus useful empty and degraded states
 - 📖 High-contrast Kindle/e-ink view with lightweight 10-minute partial refreshes
+- 📟 Compact `/api/display` JSON plus an ESP32 e-paper client sketch for always-on desk displays
 
 ## Tech Stack
 
@@ -129,6 +130,7 @@ export TOKEN_PULSE_SUBSCRIPTIONS='[
 | `GET /kindle`             | Monochrome Kindle/e-ink dashboard                            |
 | `GET /partials/kindle`    | Lightweight Kindle refresh fragment                         |
 | `GET /api/dashboard`      | Normalized dashboard JSON                                    |
+| `GET /api/display`        | Compact display-safe JSON for e-ink / ESP32 clients          |
 | `GET /healthz`            | Process health                                               |
 
 See [architecture](docs/architecture.md) and [security and deployment](docs/security-deployment.md) for operating details.
@@ -144,6 +146,43 @@ The current normalized CodexBar feed does not include per-project aggregation, s
 ### Optional jailbroken Kindle path
 
 The standard browser is the supported first version. A jailbroken Kindle can later wrap the same `/kindle` route in a WAF/Mesquite launcher for a dedicated fullscreen app. Model-specific LIPC or framebuffer hooks could add controlled partial/full refreshes or a wake → fetch → render → sleep cycle. These integrations are intentionally not required because jailbreak, WAF, power-management, and custom-screensaver support vary by Kindle model and firmware.
+
+## ESP32 e-paper display
+
+Dedicated hardware can poll the same normalized display model without a browser:
+
+```text
+CodexBar → Token Pulse → GET /api/display → ESP32 e-paper
+                         ↘ GET /kindle (HTML)
+```
+
+`GET /api/display` returns only display-safe fields, for example:
+
+```json
+{
+  "updatedAt": "2026-09-17T12:00:00.000Z",
+  "degraded": false,
+  "message": null,
+  "providers": [
+    {
+      "name": "Codex",
+      "remainingPercent": 41,
+      "resetAt": "2026-09-20T17:00:00Z",
+      "statusLabel": "Operational",
+      "windows": [{ "label": "Weekly", "remainingPercent": 41, "resetAt": "…" }],
+      "accounts": null
+    }
+  ],
+  "today": { "tokens": 1200, "cost": 0.031 },
+  "topProject": null
+}
+```
+
+The payload omits history charts, subscription config, source mode, and any CodexBar credentials. `topProject` stays `null` until the normalized feed reports projects. Multi-account providers expose masked account labels plus a headline `remainingPercent` (lowest remaining window).
+
+A reference Arduino sketch lives in [`clients/esp32-epaper/`](clients/esp32-epaper/). It connects to Wi-Fi, fetches `/api/display` over the published HTTPS origin, renders a monochrome layout, prefers partial refresh when the panel supports it, forces a full refresh on a configurable cadence to limit ghosting, deep-sleeps between 5–10 minute polls by default, and keeps the last frame with a **STALE** / **OFFLINE** badge when the network or API is temporarily unavailable.
+
+Recommended starting hardware: ESP32-WROOM-32 or ESP32-S3 with a 2.9" or 4.2" black/white e-paper module (SSD1680 / UC8151 family, for example Waveshare 2.9" V2). Setup, pin notes, and power guidance are in the client [README](clients/esp32-epaper/README.md).
 
 ## Development
 

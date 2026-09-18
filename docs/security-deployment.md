@@ -74,6 +74,8 @@ Token Pulse has no built-in user authentication. Do not bind it to a public inte
 
 The `/kindle` view follows the same boundary. It fetches a rendered fragment from Token Pulse and never calls CodexBar, so the dashboard bearer token is not sent to the device. A Kindle on the LAN or Internet must still reach Token Pulse through Tailscale policy or Cloudflare Access; the e-ink layout is not an authentication mechanism.
 
+`GET /api/display` is the machine-readable form of that boundary. It returns only the compact display model (limits, today's totals, status text). It must not include `CODEXBAR_DASHBOARD_TOKEN`, Authorization headers, SQLite paths, or other host secrets. ESP32 firmware should store only Wi-Fi credentials and the Token Pulse display URL, talk solely to the published Token Pulse origin, and treat temporary fetch failures by keeping the last painted frame rather than clearing the panel. An e-paper device is not an authentication mechanism; put Tailscale ACLs or Cloudflare Access in front of port `3000` the same way you would for `/kindle`.
+
 ## Production process model
 
 A small host runs two required foreground services and one optional access service:

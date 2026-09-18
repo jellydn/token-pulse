@@ -19,11 +19,15 @@ Provider sessions and local logs
                             ▼
                   Hono JSX + HTMX routes
                             │
-                            ▼
-                     Browser dashboard
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+       Browser dashboard  /kindle   /api/display
+                                         │
+                                         ▼
+                                   ESP32 e-paper
 ```
 
-Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the main dashboard fragment every 60 seconds. The dedicated Kindle page uses a tiny dependency-free XHR helper to replace its fragment every 10 minutes and avoid full-page reloads. Tailwind produces one static CSS file for the main dashboard; the e-ink route uses a separate minimal monochrome stylesheet for older browser compatibility.
+Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the main dashboard fragment every 60 seconds. The dedicated Kindle page uses a tiny dependency-free XHR helper to replace its fragment every 10 minutes and avoid full-page reloads. Tailwind produces one static CSS file for the main dashboard; the e-ink route uses a separate minimal monochrome stylesheet for older browser compatibility. `GET /api/display` maps `DashboardData` through `toDisplayModel()` in `src/display.ts` into a compact JSON document for headless clients such as the ESP32 sketch under `clients/esp32-epaper/`.
 
 ## Collection and storage
 
@@ -57,4 +61,16 @@ SQLite runs in WAL mode. The database and provider credentials must not be place
 | `GET /kindle` | Complete Kindle/e-ink dashboard |
 | `GET /partials/kindle` | Server-rendered Kindle refresh fragment |
 | `GET /api/dashboard` | Normalized dashboard JSON |
+| `GET /api/display` | Compact display-safe JSON for e-ink / ESP32 clients |
 | `GET /healthz` | Process health |
+
+## Display model
+
+Kindle HTML and the ESP32 client share one normalized view of usage:
+
+- Built only from `storage.dashboard()` — never from live CodexBar credentials or env.
+- Includes `updatedAt`, `degraded`, `message`, provider headline remaining percent and reset time, optional masked accounts/windows, today's token count and estimated cost (`today.cost`, from dashboard `costUsd`), and `topProject`.
+- Omits burn history, subscription configuration, adapter source mode, and raw snapshot blobs.
+- `topProject` is always `null` while the live CodexBar feed has no project aggregation; clients must not invent a project name.
+- Account labels are masked at CodexBar ingestion (emails → `d***@example.com`); non-email labels pass through unchanged per project policy.
+- Timestamps stay ISO-8601 UTC, matching the rest of Token Pulse.
