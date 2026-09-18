@@ -57,9 +57,8 @@
 #define WIFI_TIMEOUT_MS 20000
 #endif
 
-// Set -DSKIP_TLS_VERIFY=1 only for lab endpoints with self-signed certs on a
-// private network. Production builds verify against the device trust store
-// (Tailscale Serve / Cloudflare). Optional -DDISPLAY_ROOT_CA="..." pins a PEM.
+// Verified HTTPS requires -DDISPLAY_ROOT_CA="..." (PEM). Set
+// -DSKIP_TLS_VERIFY=1 only for lab self-signed endpoints on a private network.
 #ifndef SKIP_TLS_VERIFY
 #define SKIP_TLS_VERIFY 0
 #endif
@@ -100,15 +99,26 @@ static bool connectWifi() {
   return true;
 }
 
-static void configureTls(WiFiClientSecure &client) {
+/**
+ * Configure TLS for HTTPS fetches.
+ * Verified builds require a non-empty DISPLAY_ROOT_CA (PEM). Arduino-ESP32
+ * WiFiClientSecure does not reliably use a board-wide root store unless a CA
+ * or insecure mode is set — an empty verified path fails the handshake.
+ * Returns false when the build cannot establish a trust path.
+ */
+static bool configureTls(WiFiClientSecure &client) {
 #if SKIP_TLS_VERIFY
   // Lab-only self-signed endpoints on a private network.
   client.setInsecure();
+  return true;
 #else
-  if (DISPLAY_ROOT_CA[0] != '\0') {
-    client.setCACert(DISPLAY_ROOT_CA);
+  if (DISPLAY_ROOT_CA[0] == '\0') {
+    Serial.println(
+        "DISPLAY_ROOT_CA is empty; set a PEM CA or -DSKIP_TLS_VERIFY=1 for lab");
+    return false;
   }
-  // Otherwise use the board's built-in root store (Tailscale / Cloudflare).
+  client.setCACert(DISPLAY_ROOT_CA);
+  return true;
 #endif
 }
 
@@ -131,7 +141,9 @@ static void beginPaint(bool wantFull) {
 static bool fetchDisplay(char *buffer, size_t bufferSize) {
   HTTPClient http;
   WiFiClientSecure client;
-  configureTls(client);
+  if (!configureTls(client)) {
+    return false;
+  }
 
   if (!http.begin(client, DISPLAY_URL)) {
     Serial.println("HTTP begin failed");
@@ -160,12 +172,38 @@ static bool fetchDisplay(char *buffer, size_t bufferSize) {
   return true;
 }
 
-/** True when buffer parses as an object with the display-model shape. */
+/**
+ * True when buffer matches the display-model shape the renderer needs.
+ * Rejects bare `{}` so a malformed 2xx body cannot replace lastJson.
+ */
 static bool isValidDisplayJson(const char *json) {
   StaticJsonDocument<2048> doc;
   const DeserializationError err = deserializeJson(doc, json);
-  if (err) return false;
-  return doc.is<JsonObjectConst>();
+  if (err || !doc.is<JsonObjectConst>()) return false;
+
+  JsonObjectConst root = doc.as<JsonObjectConst>();
+  if (!root["providers"].is<JsonArrayConst>()) return false;
+  if (!root["today"].is<JsonObjectConst>()) return false;
+  JsonObjectConst today = root["today"].as<JsonObjectConst>();
+  if (!today["tokens"].is<long>() && !today["tokens"].is<int>() &&
+      !today["tokens"].is<float>() && !today["tokens"].is<double>()) {
+    return false;
+  }
+  if (!today["cost"].is<float>() && !today["cost"].is<double>() &&
+      !today["cost"].is<long>() && !today["cost"].is<int>()) {
+    return false;
+  }
+  if (!root["degraded"].is<bool>()) return false;
+  // message and topProject may be null; key presence is enough when present.
+  if (root.containsKey("message") && !root["message"].isNull() &&
+      !root["message"].is<const char *>()) {
+    return false;
+  }
+  if (root.containsKey("topProject") && !root["topProject"].isNull() &&
+      !root["topProject"].is<JsonObjectConst>()) {
+    return false;
+  }
+  return true;
 }
 
 static void drawStatusBadge(const char *label) {
