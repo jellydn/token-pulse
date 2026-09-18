@@ -57,6 +57,16 @@
 #define WIFI_TIMEOUT_MS 20000
 #endif
 
+// Set -DSKIP_TLS_VERIFY=1 only for lab endpoints with self-signed certs on a
+// private network. Production builds verify against the device trust store
+// (Tailscale Serve / Cloudflare). Optional -DDISPLAY_ROOT_CA="..." pins a PEM.
+#ifndef SKIP_TLS_VERIFY
+#define SKIP_TLS_VERIFY 0
+#endif
+#ifndef DISPLAY_ROOT_CA
+#define DISPLAY_ROOT_CA ""
+#endif
+
 // GxEPD2 panel selection — change to match your hardware.
 // Example: Waveshare 2.9" V2 (SSD1680), busy-high variant.
 GxEPD2_BW<GxEPD2_290_BS, GxEPD2_290_BS::HEIGHT> display(
@@ -90,6 +100,30 @@ static bool connectWifi() {
   return true;
 }
 
+static void configureTls(WiFiClientSecure &client) {
+#if SKIP_TLS_VERIFY
+  // Lab-only self-signed endpoints on a private network.
+  client.setInsecure();
+#else
+  if (DISPLAY_ROOT_CA[0] != '\0') {
+    client.setCACert(DISPLAY_ROOT_CA);
+  }
+  // Otherwise use the board's built-in root store (Tailscale / Cloudflare).
+#endif
+}
+
+/**
+ * Choose full vs partial window. Full on first wake, every FULL_REFRESH_EVERY
+ * wakes, or when no prior frame exists. Partial otherwise (less flicker/power).
+ */
+static void beginPaint(bool wantFull) {
+  if (wantFull || !hasLastFrame) {
+    display.setFullWindow();
+  } else {
+    display.setPartialWindow(0, 0, display.width(), display.height());
+  }
+}
+
 /**
  * Fetch display JSON into buffer. Returns true on HTTP 2xx with a body.
  * On failure, leaves buffer unchanged so the previous payload can render.
@@ -97,10 +131,7 @@ static bool connectWifi() {
 static bool fetchDisplay(char *buffer, size_t bufferSize) {
   HTTPClient http;
   WiFiClientSecure client;
-  // Prefer a host with a real certificate (Tailscale Serve / Cloudflare).
-  // For lab-only self-signed endpoints, setInsecure() is acceptable on a
-  // private network — never pair that with a public CodexBar origin.
-  client.setInsecure();
+  configureTls(client);
 
   if (!http.begin(client, DISPLAY_URL)) {
     Serial.println("HTTP begin failed");
@@ -129,6 +160,14 @@ static bool fetchDisplay(char *buffer, size_t bufferSize) {
   return true;
 }
 
+/** True when buffer parses as an object with the display-model shape. */
+static bool isValidDisplayJson(const char *json) {
+  StaticJsonDocument<2048> doc;
+  const DeserializationError err = deserializeJson(doc, json);
+  if (err) return false;
+  return doc.is<JsonObjectConst>();
+}
+
 static void drawStatusBadge(const char *label) {
   display.setFont(&FreeMonoBold9pt7b);
   int16_t x1, y1;
@@ -153,12 +192,12 @@ static void formatTokens(int64_t tokens, char *out, size_t outSize) {
   }
 }
 
-static void renderPayload(const char *json, bool stale) {
+static void renderPayload(const char *json, bool stale, bool wantFull) {
   StaticJsonDocument<2048> doc;
   const DeserializationError err = deserializeJson(doc, json);
   if (err) {
     Serial.printf("JSON error: %s\n", err.c_str());
-    display.setFullWindow();
+    beginPaint(wantFull);
     display.firstPage();
     do {
       display.fillScreen(GxEPD_WHITE);
@@ -196,7 +235,7 @@ static void renderPayload(const char *json, bool stale) {
              updatedAt + 11);
   }
 
-  display.setFullWindow();
+  beginPaint(wantFull);
   display.firstPage();
   do {
     display.fillScreen(GxEPD_WHITE);
@@ -280,12 +319,12 @@ static void renderPayload(const char *json, bool stale) {
   } while (display.nextPage());
 }
 
-static void renderOffline() {
+static void renderOffline(bool wantFull) {
   if (hasLastFrame) {
-    renderPayload(lastJson, true);
+    renderPayload(lastJson, true, wantFull);
     return;
   }
-  display.setFullWindow();
+  beginPaint(true);
   display.firstPage();
   do {
     display.fillScreen(GxEPD_WHITE);
@@ -312,9 +351,6 @@ void setup() {
 
   const bool wantFull =
       (wakeCount == 1) || ((wakeCount % FULL_REFRESH_EVERY) == 0);
-  // GxEPD2 uses full window updates below; partial can be enabled per-panel
-  // with setPartialWindow after the first successful paint if supported.
-  (void)wantFull;
 
   char fresh[sizeof(lastJson)];
   bool ok = false;
@@ -328,13 +364,34 @@ void setup() {
   }
 
   if (ok) {
-    memcpy(lastJson, fresh, sizeof(lastJson));
-    hasLastFrame = true;
-    lastFetchOk = true;
-    renderPayload(lastJson, false);
+    if (isValidDisplayJson(fresh)) {
+      memcpy(lastJson, fresh, sizeof(lastJson));
+      hasLastFrame = true;
+      lastFetchOk = true;
+      renderPayload(lastJson, false, wantFull);
+    } else {
+      // Reject malformed 2xx bodies; keep the last good frame when present.
+      Serial.println("Fresh payload failed JSON validation");
+      lastFetchOk = false;
+      if (hasLastFrame) {
+        renderPayload(lastJson, true, wantFull);
+      } else {
+        beginPaint(true);
+        display.firstPage();
+        do {
+          display.fillScreen(GxEPD_WHITE);
+          display.setFont(&FreeMonoBold12pt7b);
+          display.setCursor(8, 36);
+          display.print("Token Pulse");
+          display.setFont(&FreeMono9pt7b);
+          display.setCursor(8, 64);
+          display.print("Invalid JSON");
+        } while (display.nextPage());
+      }
+    }
   } else {
     lastFetchOk = false;
-    renderOffline();
+    renderOffline(wantFull);
   }
 
   goToSleep();

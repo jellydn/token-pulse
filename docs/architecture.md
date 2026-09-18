@@ -69,7 +69,8 @@ SQLite runs in WAL mode. The database and provider credentials must not be place
 Kindle HTML and the ESP32 client share one normalized view of usage:
 
 - Built only from `storage.dashboard()` — never from live CodexBar credentials or env.
-- Includes `updatedAt`, `degraded`, `message`, provider headline remaining percent and reset time, optional masked accounts/windows, today's token count and estimated cost, and `topProject`.
+- Includes `updatedAt`, `degraded`, `message`, provider headline remaining percent and reset time, optional masked accounts/windows, today's token count and estimated cost (`today.cost`, from dashboard `costUsd`), and `topProject`.
 - Omits burn history, subscription configuration, adapter source mode, and raw snapshot blobs.
 - `topProject` is always `null` while the live CodexBar feed has no project aggregation; clients must not invent a project name.
+- Account labels are masked at CodexBar ingestion (emails → `d***@example.com`); non-email labels pass through unchanged per project policy.
 - Timestamps stay ISO-8601 UTC, matching the rest of Token Pulse.

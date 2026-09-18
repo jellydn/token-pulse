@@ -43,10 +43,18 @@ flags):
 | `REFRESH_SECONDS` | Deep-sleep interval between fetches | `600` (10 min) |
 | `FULL_REFRESH_EVERY` | Full panel refresh every N wakes | `6` (~1 hour) |
 | `HTTP_TIMEOUT_MS` | Fetch timeout | `15000` |
+| `SKIP_TLS_VERIFY` | Lab-only: disable TLS cert checks (`1`) | `0` (verify) |
+| `DISPLAY_ROOT_CA` | Optional PEM string for a pinned CA | empty (system roots) |
 
-Partial refresh reduces flicker and power; a periodic full refresh clears
-ghosting. Keep the previous framebuffer when the fetch fails and draw a small
-**STALE** / **OFFLINE** badge instead of clearing the screen.
+TLS verification is on by default so Tailscale Serve and Cloudflare origins
+work with the board trust store. Set `-DSKIP_TLS_VERIFY=1` only for self-signed
+lab endpoints on a private network — never pair that with a public origin.
+
+Partial refresh reduces flicker and power after the first successful paint; a
+periodic full refresh (and the first wake) clears ghosting. Fresh 2xx bodies are
+JSON-validated before they replace the last good frame. Keep that frame when the
+fetch or parse fails and draw a small **STALE** / **OFFLINE** badge instead of
+clearing the screen.
 
 ## Build
 
