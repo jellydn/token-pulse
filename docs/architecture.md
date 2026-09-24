@@ -24,10 +24,10 @@ Provider sessions and local logs
        Browser dashboard  /kindle   /api/display
                                          │
                                          ▼
-                                   ESP32 e-paper
+                            ESP32 e-paper / JC4827W543C
 ```
 
-Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the main dashboard fragment every 60 seconds. The dedicated Kindle page uses a tiny dependency-free XHR helper to replace its fragment every 10 minutes and avoid full-page reloads. Tailwind produces one static CSS file for the main dashboard; the e-ink route uses a separate minimal monochrome stylesheet for older browser compatibility. `GET /api/display` maps `DashboardData` through `toDisplayModel()` in `src/display.ts` into a compact JSON document for headless clients such as the ESP32 sketch under `clients/esp32-epaper/`.
+Token Pulse is one Bun process. Hono renders HTML on the server. HTMX replaces the main dashboard fragment every 60 seconds. The dedicated Kindle page uses a tiny dependency-free XHR helper to replace its fragment every 10 minutes and avoid full-page reloads. Tailwind produces one static CSS file for the main dashboard; the e-ink route uses a separate minimal monochrome stylesheet for older browser compatibility. `GET /api/display` maps `DashboardData` through `toDisplayModel()` in `src/display.ts` into a compact JSON document for headless clients such as the ESP32 sketch under `clients/esp32-epaper/` and the Guition JC4827W543C sketch under `clients/jc4827w543/`.
 
 ## Collection and storage
 
