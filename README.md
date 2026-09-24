@@ -29,6 +29,7 @@ Token Pulse reads CodexBar output and turns it into a dashboard you can glance a
 - 📱 Responsive phone and desktop layouts, plus useful empty and degraded states
 - 📖 High-contrast Kindle/e-ink view with lightweight 10-minute partial refreshes
 - 📟 Compact `/api/display` JSON plus an ESP32 e-paper client sketch for always-on desk displays
+- 🖥 Guition JC4827W543C (ESP32-S3, 480×272) client for that same display JSON
 
 ## Tech Stack
 
@@ -183,6 +184,12 @@ The payload omits history charts, subscription config, source mode, and any Code
 A reference Arduino sketch lives in [`clients/esp32-epaper/`](clients/esp32-epaper/). It connects to Wi-Fi, fetches `/api/display` over the published HTTPS origin, renders a monochrome layout, prefers partial refresh when the panel supports it, forces a full refresh on a configurable cadence to limit ghosting, deep-sleeps between 5–10 minute polls by default, and keeps the last frame with a **STALE** / **OFFLINE** badge when the network or API is temporarily unavailable.
 
 Recommended starting hardware: ESP32-WROOM-32 or ESP32-S3 with a 2.9" or 4.2" black/white e-paper module (SSD1680 / UC8151 family, for example Waveshare 2.9" V2). Setup, pin notes, and power guidance are in the client [README](clients/esp32-epaper/README.md).
+
+## Guition JC4827W543C display
+
+The same `GET /api/display` payload can drive a Guition JC4827W543C: ESP32-S3, 480×272 NV3041A IPS panel, GT911 touch. The PlatformIO project in [`clients/jc4827w543/`](clients/jc4827w543/) paints **Token Pulse** before Wi-Fi, probes the touch controller, then polls the published Token Pulse origin. It is not an AWTRIX Berry app and it does not use the Sunton RGB pin map (`ESP32_4827S043`).
+
+The panel stays powered, so the firmware polls instead of deep-sleeping. A failed fetch keeps the last accepted frame and draws **STALE**. Setup, the QSPI pin map, and the USB-C flash sequence are in the client [README](clients/jc4827w543/README.md).
 
 ## Development
 

@@ -7,3 +7,4 @@ public/app.css
 *.db-wal
 .env
 .DS_Store
+clients/jc4827w543/.pio/
