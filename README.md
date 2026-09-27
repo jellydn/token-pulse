@@ -189,7 +189,7 @@ Recommended starting hardware: ESP32-WROOM-32 or ESP32-S3 with a 2.9" or 4.2" bl
 
 The same `GET /api/display` payload can drive a Guition JC4827W543C: ESP32-S3, 480×272 NV3041A IPS panel, GT911 touch. The PlatformIO project in [`clients/jc4827w543/`](clients/jc4827w543/) paints **Token Pulse** before Wi-Fi, probes the touch controller, then polls the published Token Pulse origin. It is not an AWTRIX Berry app and it does not use the Sunton RGB pin map (`ESP32_4827S043`).
 
-The panel stays powered, so the firmware polls instead of deep-sleeping. A failed fetch keeps the last accepted frame and draws **STALE**. Setup, the QSPI pin map, and the USB-C flash sequence are in the client [README](clients/jc4827w543/README.md).
+The panel stays powered, so the firmware polls instead of deep-sleeping. A failed fetch keeps the last accepted frame and draws **STALE**. Its touch Settings UI scans 2.4 GHz Wi-Fi, stores working credentials in NVS, and tests an HTTPS `/api/display` URL before saving it. Setup, TLS policy, the QSPI pin map, and the USB-C flash sequence are in the client [README](clients/jc4827w543/README.md).
 
 ## Development
 

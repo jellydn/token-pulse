@@ -14,7 +14,8 @@
       "!!node_modules",
       "!!data",
       "!!.amp",
-      "!!.delta"
+      "!!.delta",
+      "!!clients/jc4827w543/.pio"
     ]
   },
   "formatter": {
