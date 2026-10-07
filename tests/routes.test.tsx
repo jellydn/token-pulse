@@ -107,6 +107,32 @@ describe("key routes", () => {
     expect(await health.json()).toEqual({ status: "ok" });
   });
 
+  test("returns a compact display model without credentials or history", async () => {
+    const { app } = setup();
+    const response = await app.request("/api/display");
+    const body = await response.json();
+    const text = JSON.stringify(body);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(body).toMatchObject({
+      degraded: false,
+      message: null,
+      today: { tokens: expect.any(Number), cost: expect.any(Number) },
+      topProject: null,
+    });
+    expect(body.updatedAt).toEqual(expect.any(String));
+    expect(body.providers).toEqual(expect.any(Array));
+    expect(body).not.toHaveProperty("history30");
+    expect(body).not.toHaveProperty("history7");
+    expect(body).not.toHaveProperty("subscriptions");
+    expect(body).not.toHaveProperty("source");
+    expect(text).not.toContain("CODEXBAR");
+    expect(text).not.toContain("DASHBOARD_TOKEN");
+    expect(text).not.toContain("Bearer");
+    expect(text).not.toContain("token-pulse.db");
+  });
+
   test("sets security headers", async () => {
     const { app } = setup();
     const response = await app.request("/");

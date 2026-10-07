@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { clampPercent as clampPercentValue } from "./percent";
 import type {
   AccountState,
   DashboardData,
@@ -44,9 +45,9 @@ function change(value: number | null): string {
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}% vs prior`;
 }
 
+/** UI bars use floor 1 so a near-empty bar stays visible. */
 export function clampPercent(value: number | null): number {
-  if (value === null || !Number.isFinite(value)) return 0;
-  return Math.min(100, Math.max(1, value));
+  return clampPercentValue(value, 1);
 }
 
 function usageLevel(
