@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Install Token Pulse · JC4827W543C</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="installer.js"></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">TOKEN PULSE / DEVICE INSTALLER</p>
+      <h1>Your usage.<br />On your desk.</h1>
+      <p class="intro">Install Token Pulse on the Guition JC4827W543C over USB.</p>
+      <section aria-labelledby="board-heading">
+        <h2 id="board-heading">Check your board</h2>
+        <p>JC4827W543C · ESP32-S3 · NV3041A QSPI · GT911 · 480 × 272</p>
+        <p><strong>Not ESP32-4827S043 RGB.</strong> Chip detection cannot identify
+          your display or PCB. Check the board marking before you connect.</p>
+      </section>
+      <section aria-labelledby="install-heading">
+        <h2 id="install-heading">Connect and install</h2>
+        <ol>
+          <li>Use a USB-C data cable. Close other serial monitors.</li>
+          <li>Use desktop Chrome or Edge on HTTPS. iOS browsers do not support Web Serial.</li>
+          <li>Select your serial device. The installer shows progress and errors.</li>
+          <li>After flashing, open Logs &amp; Console, then use Settings on the panel.</li>
+        </ol>
+        <p id="status" role="status">Checking firmware availability…</p>
+        <p id="version"></p>
+        <esp-web-install-button id="installer" hidden>
+          <button type="button" slot="activate">Connect and install</button>
+        </esp-web-install-button>
+        <noscript>Enable JavaScript to use the installer. CLI flashing is also available below.</noscript>
+      </section>
+      <section class="warning" aria-labelledby="safety-heading">
+        <h2 id="safety-heading">Before you flash</h2>
+        <p>This page is release preparation. No physical-board validation is claimed.
+          Install only a package with a completed hardware test record.</p>
+        <p>Erase clears saved Wi-Fi and API settings. Back up your configuration first.
+          A generic build has no publisher CA and cannot fetch verified HTTPS data:
+          use a local build with your CA until a trusted release supports your origin.</p>
+        <p>Only Token Pulse may be published through authenticated access. Never expose CodexBar port 8080.</p>
+      </section>
+      <footer>
+        <a href="https://github.com/jellydn/token-pulse/blob/feat/jc4827w543-display/clients/jc4827w543/README.md">PlatformIO CLI fallback and setup</a>
+        <span>Flashing and logs by <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a> · Apache-2.0</span>
+      </footer>
+    </main>
+  </body>
+</html>
