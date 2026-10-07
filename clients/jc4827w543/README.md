@@ -44,6 +44,10 @@ one that can show **OFFLINE**.
 
 Tap **Settings** on the dashboard.
 
+Browser flashing does not provision Wi-Fi. See the
+[Improv evaluation](IMPROV_EVALUATION.md) for why the first installer keeps
+on-device Settings as the only provisioning path.
+
 1. Open **Wi-Fi**, then tap **Scan**. The list contains up to eight unique
    visible 2.4 GHz SSIDs with RSSI and security type.
 2. Select a supported network. Open networks connect directly. Secured
