@@ -184,6 +184,10 @@ A reference Arduino sketch lives in [`clients/esp32-epaper/`](clients/esp32-epap
 
 Recommended starting hardware: ESP32-WROOM-32 or ESP32-S3 with a 2.9" or 4.2" black/white e-paper module (SSD1680 / UC8151 family, for example Waveshare 2.9" V2). Setup, pin notes, and power guidance are in the client [README](clients/esp32-epaper/README.md).
 
+## AWTRIX NG LED-matrix client
+
+An [AWTRIX NG](https://github.com/Blueforcer/awtrix-ng) clock can show the same display model on a 32×8 WS2812 matrix: a [Berry app](clients/awtrix-ng/token_pulse.be) polls `GET /api/display` every few minutes and renders one page per provider plus today's totals. It is an alternative client alongside `/kindle` and the e-paper sketch — not e-paper, so no partial refresh, ghosting cadence, or deep sleep applies. Stock hardware is a Ulanzi TC001, or any ESP32/ESP32-S3 with a 32–128×8 panel; without hardware, iterate with the AWTRIX simulator (`pio run -e native_sim`). Install and settings are in the client [README](clients/awtrix-ng/README.md).
+
 ## Development
 
 ```sh
