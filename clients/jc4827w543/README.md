@@ -131,6 +131,9 @@ the dashboard, settings screens, network list, text fields, and keyboard.
 
 ## Physical-device checks
 
+Use the repeatable [hardware validation procedure](HARDWARE_VALIDATION.md),
+including the isolated `hardware-smoke` target and a firmware-specific test record.
+
 After flashing, verify these items on the board:
 
 - The dashboard and **Settings** button respond at the displayed coordinates.
