@@ -191,6 +191,14 @@ The same `GET /api/display` payload can drive a Guition JC4827W543C: ESP32-S3, 4
 
 The panel stays powered, so the firmware polls instead of deep-sleeping. A failed fetch keeps the last accepted frame and draws **STALE**. Its touch Settings UI scans 2.4 GHz Wi-Fi, stores working credentials in NVS, and tests an HTTPS `/api/display` URL before saving it. Setup, TLS policy, the QSPI pin map, and the USB-C flash sequence are in the client [README](clients/jc4827w543/README.md).
 
+## JC4827W543C browser installer
+
+The [installer source and release procedure](clients/jc4827w543/installer/README.md)
+prepare browser flashing and serial logs for the Guition QSPI panel. No
+hardware-tested web release is published yet. Use the
+[PlatformIO CLI fallback](clients/jc4827w543/README.md#build-and-flash) until
+physical validation and HTTPS release hosting are complete.
+
 ## Development
 
 ```sh

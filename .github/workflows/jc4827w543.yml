@@ -1,0 +1,34 @@
+name: JC4827W543C firmware
+on:
+  pull_request:
+  push:
+    branches: [main, 'jc4827w543/**']
+    tags: ['jc4827w543-v*']
+permissions:
+  contents: read
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install platformio==6.2.0
+      - run: python -m unittest discover -s clients/jc4827w543/scripts -p 'test_*.py'
+      - run: pio test -d clients/jc4827w543 -e native
+      - run: pio run -d clients/jc4827w543 -e jc4827w543c -e hardware-smoke
+      - name: Package candidate (no release or Pages deployment)
+        run: |
+          python clients/jc4827w543/scripts/package_installer.py \
+            --build clients/jc4827w543/.pio/build/jc4827w543c \
+            --framework "$HOME/.platformio/packages/framework-arduinoespressif32" \
+            --output clients/jc4827w543/.pio/web-installer \
+            --version "$(git describe --tags --always --dirty)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jc4827w543c-installer-${{ github.sha }}
+          path: clients/jc4827w543/.pio/web-installer/
+          if-no-files-found: error
