@@ -180,7 +180,7 @@ CodexBar → Token Pulse → GET /api/display → ESP32 e-paper
 
 The payload omits history charts, subscription config, source mode, and any CodexBar credentials. `topProject` stays `null` until the normalized feed reports projects. Multi-account providers expose masked account labels plus a headline `remainingPercent` (lowest remaining window).
 
-A reference Arduino sketch lives in [`clients/esp32-epaper/`](clients/esp32-epaper/). It connects to Wi-Fi, fetches `/api/display` over the published HTTPS origin, renders a monochrome layout, prefers partial refresh when the panel supports it, forces a full refresh on a configurable cadence to limit ghosting, deep-sleeps between 5–10 minute polls by default, and keeps the last frame with a **STALE** / **OFFLINE** badge when the network or API is temporarily unavailable.
+A reference Arduino sketch lives in [`clients/esp32-epaper/`](clients/esp32-epaper/). It connects to Wi-Fi, fetches `/api/display` through a device-reachable HTTPS gateway on a restricted private network, renders a monochrome layout, deep-sleeps for 10 minutes by default, and keeps the last frame with a **STALE** / **OFFLINE** badge when the network or API is temporarily unavailable. Full refresh is the default; verified panels that retain controller RAM across sleep can opt in to partial refresh with periodic full updates. The sketch cannot directly authenticate to Tailscale or Cloudflare Access; see the client network setup.
 
 Recommended starting hardware: ESP32-WROOM-32 or ESP32-S3 with a 2.9" or 4.2" black/white e-paper module (SSD1680 / UC8151 family, for example Waveshare 2.9" V2). Setup, pin notes, and power guidance are in the client [README](clients/esp32-epaper/README.md).
 

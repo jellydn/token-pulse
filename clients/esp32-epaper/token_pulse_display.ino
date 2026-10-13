@@ -34,9 +34,9 @@
 #define WIFI_PASSWORD "your-password"
 #endif
 
-// Full URL to the display-safe JSON endpoint (Tailscale / Access protected).
+// Full URL to a device-reachable HTTPS gateway on a restricted private network.
 #ifndef DISPLAY_URL
-#define DISPLAY_URL "https://tokens.example.ts.net/api/display"
+#define DISPLAY_URL "https://tokens.internal.example/api/display"
 #endif
 
 // Deep-sleep interval between polls (seconds). Issue default: 5–10 minutes.
@@ -44,7 +44,12 @@
 #define REFRESH_SECONDS 600
 #endif
 
-// Full panel refresh every N successful wakes to reduce ghosting.
+// Enable only after verifying controller RAM survives sleep on this hardware.
+#ifndef PANEL_RETAINS_RAM
+#define PANEL_RETAINS_RAM 0
+#endif
+
+// Full panel refresh every N wakes to reduce ghosting.
 #ifndef FULL_REFRESH_EVERY
 #define FULL_REFRESH_EVERY 6
 #endif
@@ -317,20 +322,21 @@ static void renderPayload(const char *json, bool stale, bool wantFull) {
       y += 16;
 
       display.setFont(&FreeMono9pt7b);
-      if (resetAt && strlen(resetAt) >= 16) {
+      // Reserve the separator, totals and project line on the 128-pixel panel.
+      if (resetAt && strlen(resetAt) >= 16 && y <= display.height() - 42) {
         display.setCursor(8, y);
         display.printf("Reset %.10s %.5s", resetAt, resetAt + 11);
         y += 14;
       }
-      if (statusLabel && statusLabel[0] != '\0') {
+      if (statusLabel && statusLabel[0] != '\0' && y <= display.height() - 42) {
         display.setCursor(8, y);
         display.print(statusLabel);
         y += 14;
       }
     }
 
-    y = max(y, (int16_t)96);
-    display.drawFastHLine(8, y - 10, display.width() - 16, GxEPD_BLACK);
+    y = max((int16_t)(y + 6), (int16_t)104);
+    display.drawFastHLine(8, y - 14, display.width() - 16, GxEPD_BLACK);
 
     display.setFont(&FreeMono9pt7b);
     display.setCursor(8, y);
@@ -344,7 +350,7 @@ static void renderPayload(const char *json, bool stale, bool wantFull) {
       display.print("Top project: n/a");
     }
 
-    if (message && message[0] != '\0') {
+    if (message && message[0] != '\0' && y + 18 <= display.height() - 6) {
       display.setCursor(8, display.height() - 6);
       display.print(message);
     }
@@ -383,12 +389,15 @@ void setup() {
   delay(100);
   wakeCount++;
 
-  display.init(115200, true, 50, false);
+  const bool retainedPanel = PANEL_RETAINS_RAM && hasLastFrame &&
+      esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER;
+  display.init(115200, !retainedPanel, 50, false);
   display.setRotation(1);
   display.setTextColor(GxEPD_BLACK);
+  display.setTextWrap(false);
 
   const bool wantFull =
-      (wakeCount == 1) || ((wakeCount % FULL_REFRESH_EVERY) == 0);
+      !retainedPanel || ((wakeCount % FULL_REFRESH_EVERY) == 0);
 
   char fresh[sizeof(lastJson)];
   bool ok = false;
